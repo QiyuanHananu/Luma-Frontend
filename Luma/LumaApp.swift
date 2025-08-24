@@ -1,32 +1,21 @@
 //
 //  LumaApp.swift
-//  Luma
+//  Luma - AI健康伴侣应用
+//
+//  功能说明：
+//  - 应用程序的入口文件
+//  - 纯UI版本，不包含复杂业务逻辑
 //
 //  Created by Han on 23/8/2025.
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct LumaApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
     }
 }
