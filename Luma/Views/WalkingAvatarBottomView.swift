@@ -1,3 +1,11 @@
+//
+//  WalkingAvatarBottomView.swift
+//  Luma
+//
+//  Created by Jiaoyang Liu on 27/8/2025.
+//
+
+
 import SwiftUI
 
 struct WalkingAvatarBottomView: View {
