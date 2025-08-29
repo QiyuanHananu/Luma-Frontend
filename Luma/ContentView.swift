@@ -21,18 +21,21 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showOnboarding = false
+    @State private var hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
     
     var body: some View {
         Group {
             if showOnboarding {
-                OnboardingView(showOnboarding: $showOnboarding)
+                OnboardingView(
+                    showOnboarding: $showOnboarding,
+                    hasLaunchedBefore: $hasLaunchedBefore
+                )
             } else {
                 mainTabView
             }
         }
         .onAppear {
-            // 可以在这里设置是否显示引导页
-            showOnboarding = false
+            UserDefaults.standard.removeObject(forKey: "hasLaunchedBefore")
         }
     }
     
@@ -48,21 +51,21 @@ struct ContentView: View {
             DigitalTwinView()
                 .tabItem {
                     Image(systemName: "person.crop.circle.fill")
-                    Text("我的档案")
+                    Text("My Digital Twin")
                 }
                 .tag(1)
             
             CopingSkillsView()
                 .tabItem {
                     Image(systemName: "leaf.circle.fill")
-                    Text("应对技能")
+                    Text("Coping Skills View")
                 }
                 .tag(2)
             
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear.circle.fill")
-                    Text("设置")
+                    Text("Settings")
                 }
                 .tag(3)
         }

@@ -54,7 +54,7 @@ struct DigitalTwinView: View {
                 }
                 .padding()
             }
-            .navigationTitle("我的数字孪生")
+            .navigationTitle("My digital twin")
             .refreshable {
                 await refreshHealthData()
             }
@@ -93,7 +93,7 @@ struct DigitalTwinView: View {
             }
             
             VStack(spacing: 5) {
-                Text("您的数字健康档案")
+                Text("Your digital health record")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
@@ -112,7 +112,7 @@ struct DigitalTwinView: View {
     private var todayOverviewCard: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Text("今日健康概览")
+                Text("Today's Health Overview")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
@@ -127,7 +127,7 @@ struct DigitalTwinView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 15) {
                 HealthOverviewCard(
                     icon: "heart.fill",
-                    title: "平均心率",
+                    title: "average heart rate",
                     value: "72",
                     unit: "bpm",
                     color: .red,
@@ -136,27 +136,27 @@ struct DigitalTwinView: View {
                 
                 HealthOverviewCard(
                     icon: "figure.walk",
-                    title: "今日步数",
+                    title: "Daily Steps",
                     value: "8500",
-                    unit: "步",
+                    unit: "steps",
                     color: .green,
                     trend: .up
                 )
                 
                 HealthOverviewCard(
                     icon: "moon.fill",
-                    title: "昨夜睡眠",
+                    title: "Sleep Last Night",
                     value: "7.5",
-                    unit: "小时",
+                    unit: "hours",
                     color: .purple,
                     trend: .down
                 )
                 
                 HealthOverviewCard(
                     icon: "flame.fill",
-                    title: "消耗卡路里",
+                    title: "Calories Burned",
                     value: "340",
-                    unit: "卡",
+                    unit: "kcal",
                     color: .orange,
                     trend: .up
                 )
@@ -170,11 +170,11 @@ struct DigitalTwinView: View {
     
     // MARK: - 时间范围选择器
     private var timeRangeSelector: some View {
-        Picker("时间范围", selection: $selectedTimeRange) {
-            Text("今日").tag(TimeRange.day)
-            Text("本周").tag(TimeRange.week)
-            Text("本月").tag(TimeRange.month)
-            Text("3个月").tag(TimeRange.threeMonths)
+        Picker("Time Range", selection: $selectedTimeRange) {
+            Text("Today").tag(TimeRange.day)
+            Text("This Week").tag(TimeRange.week)
+            Text("This Month").tag(TimeRange.month)
+            Text("3 Months").tag(TimeRange.threeMonths)
         }
         .pickerStyle(SegmentedPickerStyle())
         .animation(.easeInOut, value: selectedTimeRange)
@@ -183,14 +183,14 @@ struct DigitalTwinView: View {
     // MARK: - 健康趋势图表部分
     private var healthTrendsSection: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("健康趋势")
+            Text("Health Trends")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             VStack(spacing: 20) {
                 // 心率趋势图
                 healthTrendChart(
-                    title: "心率变化",
+                    title: "Heart Rate Change",
                     icon: "heart.fill",
                     color: .red,
                     data: []
@@ -198,7 +198,7 @@ struct DigitalTwinView: View {
                 
                 // 步数趋势图
                 healthTrendChart(
-                    title: "活动量",
+                    title: "Activity",
                     icon: "figure.walk",
                     color: .green,
                     data: []
@@ -206,7 +206,7 @@ struct DigitalTwinView: View {
                 
                 // 睡眠趋势图
                 healthTrendChart(
-                    title: "睡眠质量",
+                    title: "Sleep Quality",
                     icon: "moon.fill",
                     color: .purple,
                     data: []
@@ -225,11 +225,11 @@ struct DigitalTwinView: View {
             HStack {
                 Image(systemName: "brain.head.profile")
                     .foregroundColor(.blue)
-                Text("AI健康洞察")
+                Text("AI Health Insights")
                     .font(.headline)
                     .fontWeight(.semibold)
                 Spacer()
-                Button("查看更多") {
+                Button("See More") {
                     // 显示详细洞察
                 }
                 .font(.caption)
@@ -252,13 +252,13 @@ struct DigitalTwinView: View {
     private var healthGoalsSection: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Text("健康目标")
+                Text("Health Goals")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Button("设置目标") {
+                Button("Set Goal") {
                     // 打开目标设置
                 }
                 .font(.caption)
@@ -268,23 +268,23 @@ struct DigitalTwinView: View {
             VStack(spacing: 12) {
                 HealthGoalRow(
                     icon: "figure.walk",
-                    title: "每日步数",
+                    title: "Daily Step Count",
                     current: 8500,
                     target: 10000,
-                    unit: "步"
+                    unit: "steps"
                 )
                 
                 HealthGoalRow(
                     icon: "moon.fill",
-                    title: "睡眠时长",
+                    title: "Sleep Duration",
                     current: 450,
                     target: 480,
-                    unit: "分钟"
+                    unit: "minutes"
                 )
                 
                 HealthGoalRow(
                     icon: "drop.fill",
-                    title: "饮水量",
+                    title: "Water Intake",
                     current: 1800,
                     target: 2000,
                     unit: "ml"
@@ -300,7 +300,7 @@ struct DigitalTwinView: View {
     // MARK: - 健康日历部分
     private var healthCalendarSection: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("健康记录日历")
+            Text("Health Log Calendar")
                 .font(.headline)
                 .fontWeight(.semibold)
             

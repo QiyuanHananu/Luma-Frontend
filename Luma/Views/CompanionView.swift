@@ -83,7 +83,7 @@ struct CompanionView: View {
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
-                    Text("轻触我开始对话")
+                    Text("Tap me to start the conversation")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .opacity(showInputArea ? 0 : 1)
@@ -172,7 +172,7 @@ struct CompanionView: View {
         
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("今日健康概览")
+                Text("Today's Health Overview")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 Spacer()
@@ -204,7 +204,7 @@ struct CompanionView: View {
                 )
             }
             
-            Text("今日状态良好，继续保持！")
+            Text("Your condition is great today, keep it up!")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
@@ -220,7 +220,7 @@ struct CompanionView: View {
         // 输入栏
         HStack(spacing: 12) {
             // 文本输入框
-            TextField("和Luma聊聊...", text: $userInput, axis: .vertical)
+            TextField("Have a chat with Luma...", text: $userInput, axis: .vertical)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .lineLimit(1...3)
                 .onSubmit {
@@ -256,12 +256,12 @@ struct CompanionView: View {
     // MARK: - 欢迎消息
     private var welcomeMessage: some View {
         VStack(spacing: 15) {
-            Text("开始我们的对话吧！")
+            Text("Let's start our conversation!")
                 .font(.headline)
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
             
-            Text("您可以和我聊聊健康、心情，或者任何想分享的事情")
+            Text("You can chat with me about health, mood, or anything else you'd like to share")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
@@ -277,7 +277,7 @@ struct CompanionView: View {
     
     // MARK: - 快速回复建议
     private var quickReplySuggestions: some View {
-        let suggestions = ["我感觉还不错", "有点累了", "今天很有精神", "压力有点大"]
+        let suggestions = ["I feel pretty good", "A little bit tired", "I'm very energetic today", "The pressure is a little high", "I need a break"]
         
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -373,13 +373,13 @@ struct CompanionView: View {
     private func generateEmotionalResponse() -> String {
         switch lumaEmotion {
         case .happy:
-            return "很高兴能和您聊天！我注意到您的心情不错，这对健康很有益。有什么想分享的吗？"
+            return "It's a great pleasure to chat with you! I noticed that you are in a good mood, which is very beneficial to your health. Is there anything you'd like to share?"
         case .sad:
-            return "我感受到您可能有些不开心。虽然我只是AI，但我想说，您的感受很重要。需要聊聊吗？"
+            return "I sense that you might be a little unhappy. Although I'm just an AI, I want to say that your feelings are very important. Do we need to have a chat?"
         case .curious:
-            return "这很有趣！我想了解更多。您能告诉我更多细节吗？我会仔细聆听的。"
+            return "This is very interesting! I want to know more. Could you tell me more details? I will listen carefully."
         case .tired:
-            return "我的电量有点低，但仍然想帮助您。也许我们都需要休息一下？适当的休息对健康很重要。"
+            return "My battery is a bit low, but I still want to help you. Perhaps we all need to take a break? Proper rest is very important for health."
         }
     }
     
@@ -393,7 +393,7 @@ struct CompanionView: View {
             lumaEmotion = .curious
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 isListening = false
-                userInput = "刚才通过语音输入的内容"
+                userInput = "Content just entered via voice input"
                 lumaEmotion = .happy
             }
         }
@@ -774,7 +774,7 @@ struct CompanionView: View {
                 .fontWeight(.medium)
                 .foregroundColor(.primary)
             
-            Text("轻触开始对话")
+            Text("Tap to start the conversation")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -802,10 +802,10 @@ struct CompanionView: View {
     
     private var emotionStatusText: String {
         switch lumaEmotion {
-        case .happy: return "我很高兴见到您！"
-        case .sad: return "我感受到您的情绪..."
-        case .curious: return "我正在仔细聆听..."
-        case .tired: return "电量有些不足..."
+        case .happy: return "I'm very glad to meet you!"
+        case .sad: return "I can sense your emotions..."
+        case .curious: return "I'm listening carefully..."
+        case .tired: return "The battery is a bit low..."
         }
     }
     

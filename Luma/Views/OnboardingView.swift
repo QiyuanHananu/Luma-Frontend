@@ -24,10 +24,14 @@ import SwiftUI
 struct OnboardingView: View {
     // MARK: - 绑定属性
     @Binding var showOnboarding: Bool
+    @State private var showCompanionView = false
+    @Binding var hasLaunchedBefore: Bool
     
     // MARK: - 状态管理
     @State private var currentPage = 0
     @State private var isCompleted = false
+    
+    
     
     // MARK: - 页面总数
     private let totalPages = 5
@@ -125,15 +129,18 @@ struct OnboardingView: View {
                 .font(.title)
                 .fontWeight(.bold)
             
-            VStack(alignment: .leading, spacing: 15) {
-                privacyFeatureRow(icon: "checkmark.seal", text: "所有数据本地加密存储")
-                privacyFeatureRow(icon: "eye.slash", text: "绝不与第三方分享个人信息")
-                privacyFeatureRow(icon: "shield.checkerboard", text: "符合HIPAA医疗隐私标准")
-                privacyFeatureRow(icon: "person.badge.key", text: "您拥有数据的完全控制权")
+            VStack(alignment: .center, spacing: 15) {
+                privacyFeatureRow(icon: "checkmark.seal", text: "所有数据本地加密存储").padding(.horizontal)
+                privacyFeatureRow(icon: "eye.slash", text: "绝不与第三方分享个人信息").padding(.horizontal)
+                privacyFeatureRow(icon: "shield.checkerboard", text: "符合HIPAA医疗隐私标准").padding(.horizontal)
+                privacyFeatureRow(icon: "person.badge.key", text: "您拥有数据的完全控制权").padding(.horizontal)
             }
+            .padding(.horizontal)
             
             Spacer()
         }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
     }
     
     // MARK: - 权限页面
@@ -154,10 +161,10 @@ struct OnboardingView: View {
                 .padding(.horizontal)
             
             VStack(alignment: .leading, spacing: 15) {
-                permissionRow(icon: "heart", title: "健康数据", description: "心率、步数、睡眠等")
-                permissionRow(icon: "mic", title: "麦克风", description: "语音交互和情绪分析")
-                permissionRow(icon: "bell", title: "通知", description: "健康提醒和关怀消息")
-                permissionRow(icon: "camera", title: "摄像头", description: "面部情绪识别（可选）")
+                permissionRow(icon: "heart", title: "健康数据", description: "心率、步数、睡眠等").padding(.horizontal)
+                permissionRow(icon: "mic", title: "麦克风", description: "语音交互和情绪分析").padding(.horizontal)
+                permissionRow(icon: "bell", title: "通知", description: "健康提醒和关怀消息").padding(.horizontal)
+                permissionRow(icon: "camera", title: "摄像头", description: "面部情绪识别（可选）").padding(.horizontal)
             }
             
             Spacer()
@@ -273,17 +280,17 @@ struct OnboardingView: View {
     }
     
     private func completeOnboarding() {
-        // 标记引导完成
         UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
-        
-        // 关闭引导页面
         withAnimation {
-            showOnboarding = false
+            hasLaunchedBefore = true
         }
     }
 }
 
 // MARK: - 预览
 #Preview {
-    OnboardingView(showOnboarding: .constant(true))
+    OnboardingView(
+        showOnboarding: .constant(true),
+        hasLaunchedBefore: .constant(false)
+    )
 }

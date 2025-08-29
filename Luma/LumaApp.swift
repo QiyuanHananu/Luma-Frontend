@@ -13,9 +13,13 @@ import SwiftUI
 
 @main
 struct LumaApp: App {
+    init() {
+            // ⚠️ Remove for production: this line resets launch state for debugging
+            UserDefaults.standard.removeObject(forKey: "hasLaunchedBefore")
+        }
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppEntryView()
         }
     }
 }

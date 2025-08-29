@@ -45,7 +45,7 @@ struct CopingSkillsView: View {
                 }
                 .padding()
             }
-            .navigationTitle("应对技能")
+            .navigationTitle("Coping Skills")
         }
         .sheet(isPresented: $showingBreathingExercise) {
             BreathingExerciseView()
@@ -58,15 +58,15 @@ struct CopingSkillsView: View {
     // MARK: - 快速工具
     private var quickToolsSection: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("快速救急")
+            Text("Quick Emergency")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
                 QuickToolCard(
                     icon: "wind",
-                    title: "深呼吸",
-                    subtitle: "3分钟放松",
+                    title: "Deep Breathing",
+                    subtitle: "3-Minute Relaxation",
                     color: .blue
                 ) {
                     showingBreathingExercise = true
@@ -74,8 +74,8 @@ struct CopingSkillsView: View {
                 
                 QuickToolCard(
                     icon: "book.pages",
-                    title: "情绪日记",
-                    subtitle: "记录感受",
+                    title: "Emotion Journal",
+                    subtitle: "Record Your Feelings",
                     color: .purple
                 ) {
                     showingJournal = true
@@ -83,8 +83,8 @@ struct CopingSkillsView: View {
                 
                 QuickToolCard(
                     icon: "phone.fill",
-                    title: "紧急求助",
-                    subtitle: "立即获得帮助",
+                    title: "emergency calling",
+                    subtitle: "Get help immediately",
                     color: .red
                 ) {
                     // 紧急求助功能
@@ -92,8 +92,8 @@ struct CopingSkillsView: View {
                 
                 QuickToolCard(
                     icon: "music.note",
-                    title: "放松音乐",
-                    subtitle: "舒缓心情",
+                    title: "Emergency Help",
+                    subtitle: "Get Help Immediately",
                     color: .green
                 ) {
                     // 播放放松音乐
@@ -140,13 +140,13 @@ struct CopingSkillsView: View {
     private var recommendedSection: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Text("为您推荐")
+                Text("Recommended for You")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Text("基于您的最近状态")
+                Text("Based on your recent status")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -247,7 +247,7 @@ struct SkillCard: View {
                     
                     Spacer()
                     
-                    Text("\(skill.duration)分钟")
+                    Text("\(skill.duration)minutes")
                         .font(.caption)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -321,12 +321,12 @@ enum SkillCategory: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .all: return "全部"
-        case .breathing: return "呼吸练习"
-        case .meditation: return "冥想"
-        case .journaling: return "日记"
-        case .relaxation: return "放松"
-        case .mindfulness: return "正念"
+        case .all: return "All"
+        case .breathing: return "Breathing Exercises"
+        case .meditation: return "Meditation"
+        case .journaling: return "Journal"
+        case .relaxation: return "Relaxation"
+        case .mindfulness: return "Mindfulness"
         }
     }
 }
@@ -338,9 +338,9 @@ enum SkillDifficulty: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .beginner: return "初级"
-        case .intermediate: return "中级"
-        case .advanced: return "高级"
+        case .beginner: return "beginner"
+        case .intermediate: return "intermediate"
+        case .advanced: return "advanced"
         }
     }
 }

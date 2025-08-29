@@ -83,9 +83,9 @@ struct HealthOverviewCard: View {
     
     private var trendText: String {
         switch trend {
-        case .up: return "上升"
-        case .down: return "下降"
-        case .stable: return "稳定"
+        case .up: return "Rising"
+        case .down: return "Dropping"
+        case .stable: return "Stable"
         }
     }
 }
@@ -204,7 +204,7 @@ struct InsightRow: View {
                 // 相关指标标签（UI版本：显示固定标签）
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
-                        Text("睡眠")
+                        Text("Sleep")
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -212,7 +212,7 @@ struct InsightRow: View {
                             .foregroundColor(.purple)
                             .cornerRadius(8)
                         
-                        Text("健康")
+                        Text("Health")
                             .font(.caption2)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -257,7 +257,7 @@ struct HealthMetricDetailView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
+                    Button("Complete") {
                         dismiss()
                     }
                 }
@@ -283,7 +283,7 @@ struct HealthMetricDetailView: View {
             }
             
             // 状态描述
-            Text("当前状态：正常范围")
+            Text("Current Status: Within Normal Range")
                 .font(.headline)
                 .foregroundColor(.green)
                 .padding(.horizontal, 16)
@@ -298,14 +298,14 @@ struct HealthMetricDetailView: View {
     
     private var todayDataSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("今日数据")
+            Text("Today’s Data")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 12) {
-                DataPoint(title: "最高值", value: "85", color: .red)
-                DataPoint(title: "最低值", value: "62", color: .blue)
-                DataPoint(title: "平均值", value: "72", color: .green)
+                DataPoint(title: "Maximum", value: "85", color: .red)
+                DataPoint(title: "Minimum", value: "62", color: .blue)
+                DataPoint(title: "Average", value: "72", color: .green)
             }
         }
         .padding()
@@ -316,7 +316,7 @@ struct HealthMetricDetailView: View {
     
     private var trendChartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("7天趋势")
+            Text("7-Day Trend")
                 .font(.headline)
                 .fontWeight(.semibold)
             
@@ -325,7 +325,7 @@ struct HealthMetricDetailView: View {
                 .fill(Color(.systemGray6))
                 .frame(height: 200)
                 .overlay(
-                    Text("趋势图表\n（待集成Charts框架）")
+                    Text("Trend chart\n(To be integrated with Charts framework)")
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 )
@@ -339,13 +339,13 @@ struct HealthMetricDetailView: View {
     private var goalSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("目标设置")
+                Text("Goal Setting")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Button("编辑") {
+                Button("Edit") {
                     // 编辑目标
                 }
                 .font(.subheadline)
@@ -371,17 +371,17 @@ struct HealthMetricDetailView: View {
             HStack {
                 Image(systemName: "brain.head.profile")
                     .foregroundColor(.blue)
-                Text("AI建议")
+                Text("AI Recommendation")
                     .font(.headline)
                     .fontWeight(.semibold)
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("基于您的数据分析")
+                Text("Based on your data analysis")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
-                Text("您的\(metric.displayName)数据在正常范围内。建议继续保持当前的生活习惯，适量运动有助于维持健康的\(metric.displayName)。")
+                Text("Your \(metric.displayName) data is within the normal range. It is recommended that you maintain your current lifestyle habits, with moderate physical activity to support a healthy \(metric.displayName).")
                     .font(.body)
                     .foregroundColor(.primary)
             }
@@ -490,10 +490,10 @@ struct HealthStatusIndicator: View {
     
     private var statusText: String {
         switch status {
-        case .excellent: return "极佳"
-        case .good: return "良好"
-        case .fair: return "一般"
-        case .poor: return "需改善"
+        case .excellent: return "Excellent"
+        case .good: return "Good"
+        case .fair: return "Fair"
+        case .poor: return "Needs Improvement"
         }
     }
 }
@@ -505,15 +505,15 @@ struct BreathingExerciseView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("呼吸练习功能")
+                Text("Breathing Exercise Function")
                     .font(.title)
-                Text("（待实现）")
+                Text("(To be implemented) ")
                     .foregroundColor(.secondary)
             }
-            .navigationTitle("深呼吸")
+            .navigationTitle("Deep Breathing")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -527,15 +527,15 @@ struct JournalView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("情绪日记功能")
+                Text("Mood Journal Feature")
                     .font(.title)
-                Text("（待实现）")
+                Text("(Coming Soon)")
                     .foregroundColor(.secondary)
             }
-            .navigationTitle("情绪日记")
+            .navigationTitle("Mood Journal")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -549,15 +549,15 @@ struct ProfileEditView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("个人资料编辑")
+                Text("Profile Editing")
                     .font(.title)
-                Text("（待实现）")
+                Text("(Coming Soon)")
                     .foregroundColor(.secondary)
             }
-            .navigationTitle("编辑资料")
+            .navigationTitle("Edit Profile")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -571,15 +571,15 @@ struct PrivacySettingsView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("隐私设置")
+                Text("Privacy Settings")
                     .font(.title)
-                Text("（待实现）")
+                Text("(To be implemented)")
                     .foregroundColor(.secondary)
             }
-            .navigationTitle("隐私设置")
+            .navigationTitle("Privacy Settings")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -593,15 +593,15 @@ struct AboutView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("关于Luma")
+                Text("About Luma")
                     .font(.title)
-                Text("（待实现）")
+                Text("(To be implemented)")
                     .foregroundColor(.secondary)
             }
-            .navigationTitle("关于")
+            .navigationTitle("About")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -612,7 +612,7 @@ struct AboutView: View {
 #Preview("Health Overview Card") {
     HealthOverviewCard(
         icon: "heart.fill",
-        title: "心率",
+        title: "Heart Rate",
         value: "72",
         unit: "bpm",
         color: .red,
@@ -624,10 +624,10 @@ struct AboutView: View {
 #Preview("Health Goal Row") {
     HealthGoalRow(
         icon: "figure.walk",
-        title: "每日步数",
+        title: "Daily Steps",
         current: 7500,
         target: 10000,
-        unit: "步"
+        unit: "Steps"
     )
     .padding()
 }

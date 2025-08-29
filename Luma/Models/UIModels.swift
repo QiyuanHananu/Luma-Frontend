@@ -62,10 +62,10 @@ enum HealthMetric: String, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .heartRate: return "心率"
-        case .stepCount: return "步数"
-        case .sleep: return "睡眠"
-        case .calories: return "卡路里"
+        case .heartRate: return "Heart Rate"
+        case .stepCount: return "Step Count"
+        case .sleep: return "Sleep Hours"
+        case .calories: return "Calories"
         }
     }
     
@@ -90,9 +90,9 @@ enum HealthMetric: String, CaseIterable {
     var unit: String {
         switch self {
         case .heartRate: return "bpm"
-        case .stepCount: return "步"
-        case .sleep: return "小时"
-        case .calories: return "卡"
+        case .stepCount: return "steps"
+        case .sleep: return "hours"
+        case .calories: return "calories"
         }
     }
 }
@@ -112,15 +112,15 @@ struct HealthInsight: Identifiable {
     
     static let mockData = [
         HealthInsight(
-            title: "睡眠质量改善",
-            description: "您的睡眠质量在过去一周有所改善",
-            suggestion: "继续保持规律的作息时间",
+            title: "Better Sleep This Week ❤️",
+            description: "You've been sleeping better over the past week. That's a great sign 👍",
+            suggestion: "Keep up your healthy routine — your body is thanking you for it ☁️",
             timestamp: Date().addingTimeInterval(-3600)
         ),
         HealthInsight(
-            title: "运动量提醒",
-            description: "今天的活动量比平时少了30%",
-            suggestion: "建议进行30分钟的轻度运动",
+            title: "Gentle Nudge to Move 👟",
+            description: "Looks like you've been a bit less active today — about 30 % below your usual 🫂",
+            suggestion: "Maybe take a short walk or stretch for 30 minutes? Your future self will thank you 🙏",
             timestamp: Date().addingTimeInterval(-1800)
         )
     ]
@@ -137,29 +137,29 @@ struct CopingSkill: Identifiable {
     
     static let mockData = [
         CopingSkill(
-            title: "4-7-8呼吸法",
-            description: "经典的放松呼吸练习",
+            title: "4-7-8 Breathing",
+            description: "Let’s breathe together. Inhale for 4, hold for 7, exhale for 8. Gently reset 🧘",
             duration: 5,
             icon: "wind",
             color: .blue
         ),
         CopingSkill(
-            title: "正念冥想",
-            description: "专注当下，观察呼吸",
+            title: "Mindfulness Meditation",
+            description: "Let’s take a moment to be here, just as we are",
             duration: 10,
             icon: "leaf.fill",
             color: .green
         ),
         CopingSkill(
-            title: "感恩日记",
-            description: "记录值得感恩的事情",
+            title: "Gratitude Journaling",
+            description: "Even one small thing — let’s write it down and hold onto that feeling",
             duration: 10,
             icon: "heart.fill",
             color: .pink
         ),
         CopingSkill(
-            title: "肌肉放松",
-            description: "逐步放松全身肌肉",
+            title: "Progressive Muscle Relaxation",
+            description: "We’ll go slowly. From your toes to your shoulders, let’s release the tension together",
             duration: 15,
             icon: "figure.mind.and.body",
             color: .purple
@@ -169,7 +169,7 @@ struct CopingSkill: Identifiable {
 
 /// 用户设置
 class UserSettings: ObservableObject {
-    @Published var userName = "用户"
+    @Published var userName = "user"
     @Published var notificationsEnabled = true
     @Published var voiceEnabled = true
     @Published var faceRecognitionEnabled = false
@@ -183,22 +183,22 @@ class UserSettings: ObservableObject {
 extension Conversation {
     static let mockData = [
         Conversation(
-            message: "今天感觉有点累，可能是昨晚没睡好",
+            message: "I feel a bit tired today. Maybe I didn’t sleep well last night.",
             isFromUser: true,
             timestamp: Date().addingTimeInterval(-300)
         ),
         Conversation(
-            message: "我理解您的感受。看看您的睡眠数据，昨晚确实只睡了6.5小时。建议今晚早点休息，保持7-8小时的睡眠。",
+            message: "I hear you. Based on your recent sleep data, you slept 6.5 hours last night. I suggest turning in earlier tonight to get 7–8 hours of rest 🛌",
             isFromUser: false,
             timestamp: Date().addingTimeInterval(-240)
         ),
         Conversation(
-            message: "好的，我会注意的。有什么改善睡眠的建议吗？",
+            message: "Alright. I'll keep that in mind. Do you have any tips for better sleep?",
             isFromUser: true,
             timestamp: Date().addingTimeInterval(-180)
         ),
         Conversation(
-            message: "建议睡前1小时避免使用电子设备，可以尝试一些放松练习，比如深呼吸或轻度冥想。",
+            message: "Try limiting screen time an hour before bed. You could also try relaxing techniques like deep breathing or mindfulness 🎧",
             isFromUser: false,
             timestamp: Date().addingTimeInterval(-120)
         )
