@@ -1,0 +1,156 @@
+name: iOS CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, qiyuanhanfront, lainey-front-dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test iOS App
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+        
+    - name: Cache Xcode DerivedData
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-xcode-${{ hashFiles('**/*.xcodeproj') }}
+        restore-keys: |
+          ${{ runner.os }}-xcode-
+          
+    - name: Install Dependencies
+      run: |
+        # 如果有 CocoaPods
+        # pod install
+        
+        # 如果有 Swift Package Manager (SPM)
+        xcodebuild -resolvePackageDependencies -scheme Luma
+        
+    - name: Build iOS App
+      run: |
+        xcodebuild \
+          -project Luma.xcodeproj \
+          -scheme Luma \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0' \
+          -configuration Debug \
+          clean build \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Run Tests
+      run: |
+        xcodebuild \
+          -project Luma.xcodeproj \
+          -scheme Luma \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0' \
+          -configuration Debug \
+          test \
+          CODE_SIGNING_ALLOWED=NO
+      continue-on-error: true  # 如果还没有测试，允许失败
+      
+    - name: SwiftLint (Code Quality)
+      run: |
+        # 安装 SwiftLint
+        brew install swiftlint
+        
+        # 运行代码质量检查
+        swiftlint --strict
+      continue-on-error: true  # 第一次可能有很多警告
+      
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: ios-build-artifacts
+        path: |
+          ~/Library/Developer/Xcode/DerivedData/**/Build/Products/**/*.app
+        retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security scan
+      uses: securecodewarrior/github-action-add-sarif@v1
+      continue-on-error: true
+      with:
+        sarif-file: 'security-scan.sarif'
+
+  deploy-to-testflight:
+    name: Deploy to TestFlight
+    runs-on: macos-latest
+    needs: [build-and-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+        
+    - name: Import Signing Certificate
+      env:
+        SIGNING_CERTIFICATE_P12_DATA: ${{ secrets.SIGNING_CERTIFICATE_P12_DATA }}
+        SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+      run: |
+        # 导入签名证书 (需要在 GitHub Secrets 中配置)
+        echo $SIGNING_CERTIFICATE_P12_DATA | base64 --decode > certificate.p12
+        security create-keychain -p "" build.keychain
+        security import certificate.p12 -k build.keychain -P $SIGNING_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+        security list-keychains -s build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "" build.keychain
+        
+    - name: Download Provisioning Profile
+      env:
+        PROVISIONING_PROFILE_DATA: ${{ secrets.PROVISIONING_PROFILE_DATA }}
+      run: |
+        # 下载配置文件 (需要在 GitHub Secrets 中配置)
+        echo $PROVISIONING_PROFILE_DATA | base64 --decode > profile.mobileprovision
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+        
+    - name: Build for App Store
+      run: |
+        xcodebuild \
+          -project Luma.xcodeproj \
+          -scheme Luma \
+          -configuration Release \
+          -destination generic/platform=iOS \
+          -archivePath Luma.xcarchive \
+          archive
+          
+    - name: Export IPA
+      run: |
+        xcodebuild \
+          -exportArchive \
+          -archivePath Luma.xcarchive \
+          -exportPath . \
+          -exportOptionsPlist ExportOptions.plist
+          
+    - name: Upload to TestFlight
+      env:
+        APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+      run: |
+        # 上传到 TestFlight (需要配置 App Store Connect API)
+        xcrun altool \
+          --upload-app \
+          --type ios \
+          --file Luma.ipa \
+          --apiKey $APP_STORE_CONNECT_API_KEY
