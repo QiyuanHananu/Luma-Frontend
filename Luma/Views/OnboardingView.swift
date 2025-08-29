@@ -100,15 +100,15 @@ struct OnboardingView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.blue)
             
-            Text("欢迎使用 Luma")
+            Text("Welcome to Luma")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("您的AI健康伴侣")
+            Text("Your AI Health Companion")
                 .font(.title2)
                 .foregroundColor(.secondary)
             
-            Text("Luma会24小时关怀您的健康，\n提供个性化的健康建议和情感支持")
+            Text("Luma is here to care for your health 24/7,\nproviding personalized health advice and emotional support.")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
@@ -125,15 +125,15 @@ struct OnboardingView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.green)
             
-            Text("您的隐私我们守护")
+            Text("We protect your privacy")
                 .font(.title)
                 .fontWeight(.bold)
             
             VStack(alignment: .center, spacing: 15) {
-                privacyFeatureRow(icon: "checkmark.seal", text: "所有数据本地加密存储").padding(.horizontal)
-                privacyFeatureRow(icon: "eye.slash", text: "绝不与第三方分享个人信息").padding(.horizontal)
-                privacyFeatureRow(icon: "shield.checkerboard", text: "符合HIPAA医疗隐私标准").padding(.horizontal)
-                privacyFeatureRow(icon: "person.badge.key", text: "您拥有数据的完全控制权").padding(.horizontal)
+                privacyFeatureRow(icon: "checkmark.seal", text: "Encrypted Data").padding(.horizontal)
+                privacyFeatureRow(icon: "eye.slash", text: "No Data Sharing").padding(.horizontal)
+                privacyFeatureRow(icon: "shield.checkerboard", text: "HIPAA Compliant").padding(.horizontal)
+                privacyFeatureRow(icon: "person.badge.key", text: "User Data Control").padding(.horizontal)
             }
             .padding(.horizontal)
             
@@ -152,19 +152,19 @@ struct OnboardingView: View {
                 .font(.system(size: 60))
                 .foregroundColor(.red)
             
-            Text("需要您的授权")
+            Text("Full Data Control")
                 .font(.title)
                 .fontWeight(.bold)
             
-            Text("为了提供最佳的健康关怀，\nLuma需要访问以下数据：")
+            Text("To provide the best health care,\nLuma needs access to the following data:")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
             VStack(alignment: .leading, spacing: 15) {
-                permissionRow(icon: "heart", title: "健康数据", description: "心率、步数、睡眠等").padding(.horizontal)
-                permissionRow(icon: "mic", title: "麦克风", description: "语音交互和情绪分析").padding(.horizontal)
-                permissionRow(icon: "bell", title: "通知", description: "健康提醒和关怀消息").padding(.horizontal)
-                permissionRow(icon: "camera", title: "摄像头", description: "面部情绪识别（可选）").padding(.horizontal)
+                permissionRow(icon: "heart", title: "Health Data", description: "Heart rate, steps, sleep, etc.").padding(.horizontal)
+                permissionRow(icon: "mic", title: "Microphone", description: "Voice interaction and emotion analysis").padding(.horizontal)
+                permissionRow(icon: "bell", title: "Notifications", description: "Health alerts and care messages").padding(.horizontal)
+                permissionRow(icon: "camera", title: "Camera", description: "Facial emotion recognition (optional)").padding(.horizontal)
             }
             
             Spacer()
@@ -176,18 +176,18 @@ struct OnboardingView: View {
         VStack(spacing: 30) {
             Spacer()
             
-            Text("个性化设置")
+            Text("Personalized Setup")
                 .font(.title)
                 .fontWeight(.bold)
             
-            Text("帮助我们更好地了解您")
+            Text("Help Us Know You Better")
                 .foregroundColor(.secondary)
             
             // 这里将来会添加基础信息表单
             VStack(spacing: 20) {
-                Text("年龄范围、健康目标、生活习惯等设置")
+                Text("Age, Goals, Habits")
                     .foregroundColor(.secondary)
-                Text("（具体表单待实现）")
+                Text("(Form Coming Soon)")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
@@ -222,7 +222,7 @@ struct OnboardingView: View {
         HStack {
             // 上一步按钮
             if currentPage > 0 {
-                Button("上一步") {
+                Button("Previous") {
                     withAnimation {
                         currentPage -= 1
                     }
@@ -233,7 +233,7 @@ struct OnboardingView: View {
             Spacer()
             
             // 下一步/完成按钮
-            Button(currentPage == totalPages - 1 ? "开始使用" : "下一步") {
+            Button(currentPage == totalPages - 1 ? "Start" : "Next") {
                 if currentPage == totalPages - 1 {
                     completeOnboarding()
                 } else {

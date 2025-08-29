@@ -52,7 +52,7 @@ struct SettingsView: View {
                 // 关于部分
                 aboutSection
             }
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
         }
         .sheet(isPresented: $showingProfileEdit) {
             ProfileEditView()
@@ -86,7 +86,7 @@ struct SettingsView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("点击编辑个人信息")
+                        Text("Tap to edit personal information")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -100,7 +100,7 @@ struct SettingsView: View {
             }
             .buttonStyle(PlainButtonStyle())
         } header: {
-            Text("个人信息")
+            Text("Personal Information")
         }
     }
     
@@ -109,15 +109,15 @@ struct SettingsView: View {
         Section {
             // AI个性风格
             HStack {
-                Label("AI个性风格", systemImage: "brain.head.profile")
+                Label("AI Personality", systemImage: "brain.head.profile")
                 Spacer()
-                Text("友好")
+                Text("Friendly")
                     .foregroundColor(.secondary)
             }
             
             // 语音交互
             HStack {
-                Label("语音交互", systemImage: "mic.circle")
+                Label("Voice Interaction", systemImage: "mic.circle")
                 Spacer()
                 Toggle("", isOn: $userSettings.voiceEnabled)
                     .labelsHidden()
@@ -125,7 +125,7 @@ struct SettingsView: View {
             
             // 主动关怀
             HStack {
-                Label("主动关怀", systemImage: "heart.circle")
+                Label("Proactive Care", systemImage: "heart.circle")
                 Spacer()
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
@@ -133,16 +133,16 @@ struct SettingsView: View {
             
             // 提醒频率
             HStack {
-                Label("关怀频率", systemImage: "clock.circle")
+                Label("Care Frequency", systemImage: "clock.circle")
                 Spacer()
-                Text("适中")
+                Text("Moderate")
                     .foregroundColor(.secondary)
             }
             
         } header: {
-            Text("AI伴侣设置")
+            Text("AI Companion Settings")
         } footer: {
-            Text("调整Luma的个性和交互方式，让AI伴侣更符合您的偏好")
+            Text("Adjust Luma’s personality and interaction style to better match your preferences")
         }
     }
     
@@ -151,7 +151,7 @@ struct SettingsView: View {
         Section {
             // 面部识别
             HStack {
-                Label("面部情绪识别", systemImage: "faceid")
+                Label("Facial Emotion Recognition", systemImage: "faceid")
                 Spacer()
                 Toggle("", isOn: $userSettings.faceRecognitionEnabled)
                     .labelsHidden()
@@ -159,16 +159,16 @@ struct SettingsView: View {
             
             // 隐私级别
             HStack {
-                Label("隐私级别", systemImage: "shield.checkerboard")
+                Label("Privacy Level", systemImage: "shield.checkerboard")
                 Spacer()
-                Text("平衡")
+                Text("Balanced")
                     .foregroundColor(.secondary)
             }
             
             // 详细隐私设置
             Button(action: { showingPrivacySheet = true }) {
                 HStack {
-                    Label("详细隐私设置", systemImage: "lock.shield")
+                    Label("Detailed Privacy Settings", systemImage: "lock.shield")
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)
@@ -178,15 +178,15 @@ struct SettingsView: View {
             .foregroundColor(.primary)
             
             // 数据导出
-            Button("导出我的数据") {
+            Button("Export my data") {
                 // 导出用户数据
             }
             .foregroundColor(.blue)
             
         } header: {
-            Text("隐私和安全")
+            Text("Privacy and Security")
         } footer: {
-            Text("您的数据安全是我们的首要任务。所有健康数据都经过端到端加密。")
+            Text("Your data security is our top priority. All health data is end-to-end encrypted.")
         }
     }
     
@@ -195,7 +195,7 @@ struct SettingsView: View {
         Section {
             // 推送通知
             HStack {
-                Label("推送通知", systemImage: "bell.circle")
+                Label("Push Notification", systemImage: "bell.circle")
                 Spacer()
                 Toggle("", isOn: $userSettings.notificationsEnabled)
                     .labelsHidden()
@@ -203,7 +203,7 @@ struct SettingsView: View {
             
             // 健康提醒
             HStack {
-                Label("健康提醒", systemImage: "heart.text.square")
+                Label("Health Reminders", systemImage: "heart.text.square")
                 Spacer()
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
@@ -212,7 +212,7 @@ struct SettingsView: View {
             
             // 运动提醒
             HStack {
-                Label("运动提醒", systemImage: "figure.walk.circle")
+                Label("Exercise Reminders", systemImage: "figure.walk.circle")
                 Spacer()
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
@@ -221,7 +221,7 @@ struct SettingsView: View {
             
             // 睡眠提醒
             HStack {
-                Label("睡眠提醒", systemImage: "moon.circle")
+                Label("Sleep Reminders", systemImage: "moon.circle")
                 Spacer()
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
@@ -229,10 +229,10 @@ struct SettingsView: View {
             }
             
         } header: {
-            Text("通知设置")
+            Text("Notification Settings")
         } footer: {
             if !userSettings.notificationsEnabled {
-                Text("已关闭推送通知，部分功能可能受到限制")
+                Text("Push notifications are disabled. Some features may be limited.")
             }
         }
     }
@@ -242,36 +242,36 @@ struct SettingsView: View {
         Section {
             // HealthKit状态
             HStack {
-                Label("HealthKit连接", systemImage: "heart.text.square")
+                Label("HealthKit Connected", systemImage: "heart.text.square")
                 Spacer()
                 
-                Text("已连接")
+                Text("Connected")
                     .foregroundColor(.green)
                     .font(.caption)
             }
             
             // 数据同步
             HStack {
-                Label("数据同步", systemImage: "arrow.triangle.2.circlepath")
+                Label("Data Sync", systemImage: "arrow.triangle.2.circlepath")
                 Spacer()
                 
-                Text("实时监控中")
+                Text("Real-Time Monitoring")
                     .foregroundColor(.green)
                     .font(.caption)
             }
             
             // 健康数据分享
             HStack {
-                Label("健康数据共享", systemImage: "square.and.arrow.up")
+                Label("Share Health Data", systemImage: "square.and.arrow.up")
                 Spacer()
                 Toggle("", isOn: .constant(true))
                     .labelsHidden()
             }
             
         } header: {
-            Text("健康数据")
+            Text("Health Data")
         } footer: {
-            Text("Luma需要访问您的健康数据来提供个性化的健康建议")
+            Text("Luma needs access to your health data to provide personalized health advice")
         }
     }
     
@@ -279,11 +279,11 @@ struct SettingsView: View {
     private var supportSection: some View {
         Section {
             NavigationLink(destination: EmptyView()) {
-                Label("使用指南", systemImage: "questionmark.circle")
+                Label("User Guide", systemImage: "questionmark.circle")
             }
             
             NavigationLink(destination: EmptyView()) {
-                Label("常见问题", systemImage: "doc.text")
+                Label("FAQ", systemImage: "doc.text")
             }
             
             Button(action: {
@@ -293,7 +293,7 @@ struct SettingsView: View {
                 }
             }) {
                 HStack {
-                    Label("联系客服", systemImage: "envelope")
+                    Label("Contact Support", systemImage: "envelope")
                     Spacer()
                     Image(systemName: "arrow.up.right")
                         .foregroundColor(.secondary)
@@ -303,11 +303,11 @@ struct SettingsView: View {
             .foregroundColor(.primary)
             
             NavigationLink(destination: EmptyView()) {
-                Label("反馈建议", systemImage: "exclamationmark.bubble")
+                Label("Feedback", systemImage: "exclamationmark.bubble")
             }
             
         } header: {
-            Text("帮助与支持")
+            Text("Help & Support")
         }
     }
     
@@ -316,7 +316,7 @@ struct SettingsView: View {
         Section {
             Button(action: { showingAbout = true }) {
                 HStack {
-                    Label("关于Luma", systemImage: "info.circle")
+                    Label("About Luma", systemImage: "info.circle")
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundColor(.secondary)
@@ -326,22 +326,22 @@ struct SettingsView: View {
             .foregroundColor(.primary)
             
             NavigationLink(destination: EmptyView()) {
-                Label("隐私政策", systemImage: "hand.raised")
+                Label("Privacy Policy", systemImage: "hand.raised")
             }
             
             NavigationLink(destination: EmptyView()) {
-                Label("服务条款", systemImage: "doc.plaintext")
+                Label("Terms of Service", systemImage: "doc.plaintext")
             }
             
             HStack {
-                Label("版本", systemImage: "number")
+                Label("Version", systemImage: "number")
                 Spacer()
                 Text("1.0.0 (Beta)")
                     .foregroundColor(.secondary)
             }
             
         } header: {
-            Text("关于")
+            Text("About")
         }
     }
 }

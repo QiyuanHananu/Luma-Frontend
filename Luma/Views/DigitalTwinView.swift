@@ -304,7 +304,7 @@ struct DigitalTwinView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            Text("点击日期查看当天详细健康数据")
+            Text("Tap a date to view detailed health data for the day")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
@@ -313,7 +313,7 @@ struct DigitalTwinView: View {
                 .fill(Color(.systemGray6))
                 .frame(height: 200)
                 .overlay(
-                    Text("健康日历组件\n（待实现）")
+                    Text("Calendar Component\n(Coming Soon)")
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 )
@@ -330,7 +330,7 @@ struct DigitalTwinView: View {
     }
     
     private var healthStatusText: String {
-        return "健康状态良好" // UI版本：固定显示
+        return "Good Health Status" // UI版本：固定显示
     }
     
     private func healthTrendChart(title: String, icon: String, color: Color, data: [HealthDataPoint]) -> some View {
@@ -342,7 +342,7 @@ struct DigitalTwinView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 Spacer()
-                Button("详情") {
+                Button("Details") {
                     // 显示详细图表
                 }
                 .font(.caption)
@@ -354,7 +354,7 @@ struct DigitalTwinView: View {
                 .fill(color.opacity(0.1))
                 .frame(height: 80)
                 .overlay(
-                    Text("趋势图表（待集成Charts框架）")
+                    Text("Trend Chart (to be integrated with Charts framework)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 )
@@ -399,7 +399,7 @@ struct InsightRowSimple: View {
                     
                     Spacer()
                     
-                    Text("刚刚")
+                    Text("just now")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
