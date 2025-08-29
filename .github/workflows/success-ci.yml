@@ -7,16 +7,20 @@ on:
 jobs:
   build-success:
     name: Build iOS App (Success Version)
-    runs-on: macos-14  # 使用 macos-14 而不是 latest
+    runs-on: macos-latest  # 使用最新的 macOS runner
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.4.0'
+        
     - name: List Xcode versions
       run: |
         echo "=== Available Xcode versions ==="
-        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
         xcodebuild -version
         xcrun simctl list runtimes
         

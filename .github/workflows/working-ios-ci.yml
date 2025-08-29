@@ -16,7 +16,7 @@ jobs:
     - name: Setup Xcode (Latest)
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: 'latest-stable'
+        xcode-version: '16.4.0'
         
     - name: Show available simulators
       run: |
