@@ -205,11 +205,11 @@ struct OnboardingView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.green)
             
-            Text("设置完成！")
+            Text("setup complete!")
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            Text("Luma已经准备好为您提供\n24小时的健康关怀服务")
+            Text("Luma is ready to provide you with \n 24-hour health care services")
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
             
