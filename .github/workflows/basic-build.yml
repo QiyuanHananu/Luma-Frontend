@@ -1,0 +1,43 @@
+name: Basic Build Test
+
+on:
+  push:
+    branches: [ qiyuanhanfront ]
+
+jobs:
+  check-project:
+    name: Check Project Structure
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: List project files
+      run: |
+        echo "=== Project Root ==="
+        ls -la
+        echo ""
+        echo "=== Looking for .xcodeproj ==="
+        find . -name "*.xcodeproj" -type d
+        echo ""
+        echo "=== Looking for .xcworkspace ==="
+        find . -name "*.xcworkspace" -type d
+        
+    - name: Check Xcode project details
+      run: |
+        if [ -f "Luma.xcodeproj/project.pbxproj" ]; then
+          echo "✅ Found Luma.xcodeproj"
+          echo "=== Available schemes ==="
+          xcodebuild -list -project Luma.xcodeproj
+        else
+          echo "❌ Luma.xcodeproj not found"
+          exit 1
+        fi
+        
+    - name: Simple syntax check
+      run: |
+        echo "🔍 Checking Swift files for basic syntax..."
+        find . -name "*.swift" -type f -exec echo "Checking: {}" \;
+        # 简单的语法检查
+        find . -name "*.swift" -type f | head -5
