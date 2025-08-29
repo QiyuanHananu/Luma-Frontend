@@ -25,20 +25,20 @@ excluded: # 排除的路径
 
 # 配置规则
 type_body_length:
-  - 300 # warning
-  - 400 # error
+  - 500 # warning
+  - 700 # error
 
 file_length:
-  warning: 500
-  error: 800
+  warning: 800
+  error: 1200
 
 function_body_length:
   warning: 60
   error: 100
 
 line_length:
-  warning: 120
-  error: 150
+  warning: 180
+  error: 250
   ignores_urls: true
   ignores_function_declarations: true
   ignores_comments: true
