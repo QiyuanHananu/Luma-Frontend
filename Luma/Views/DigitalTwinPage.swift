@@ -13,8 +13,8 @@ struct DigitalTwinPage: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Text("This is your Digital Twin")
-                .font(.title2)
+            Text("Click to see the digital twin")
+                .font(.title)
                 .fontWeight(.semibold)
                 .padding(.top, 20)
                 .padding(.bottom, 10)
