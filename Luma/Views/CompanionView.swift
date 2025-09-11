@@ -18,10 +18,14 @@ struct CompanionView: View {
     @State private var isListening = false
     @State private var showHealthSnapshot = false
     @State private var conversations = Conversation.mockData
-    @State private var lumaEmotion: LumaEmotion = .happy
+    @State private var lumaEmotion: LumaEmotion = .curious
     @State private var lumaIsThinking = false
     @State private var showInputArea = false
     @State private var showConversationBubble = false
+    @State private var isBouncing = false
+    @State private var isDozing = false
+    @State private var armsUp = false // Happy时举手
+    @State private var armWave = false // 手臂摆动
     
     var body: some View {
         NavigationView {
@@ -54,6 +58,39 @@ struct CompanionView: View {
             .onTapGesture {
                 // 点击空白处隐藏输入框
                 hideKeyboard()
+            }
+            .onChange(of: lumaEmotion) { newValue in
+                print("🔄 情绪变化为: \(newValue)")
+                
+                // 立即重置所有动画状态
+                isBouncing = false
+                isDozing = false
+                armsUp = false
+                armWave = false
+                
+                // 根据新情绪设置对应动画
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        switch newValue {
+                        case .happy:
+                            print("🎉 启动happy动画: 弹跳+举手")
+                            isBouncing = true
+                            armsUp = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                print("🎉 启动手臂摆动")
+                                armWave = true
+                            }
+                        case .tired:
+                            print("😴 启动tired动画: Zzz")
+                            isDozing = true
+                        case .sad:
+                            print("😢 启动sad动画: 坐地低头")
+                            // sad的动画通过视图本身的判断实现
+                        case .curious:
+                            print("🤔 curious状态: 保持默认")
+                        }
+                    }
+                }
             }
         }
     }
@@ -308,10 +345,11 @@ struct CompanionView: View {
     
     // MARK: - 方法
     private func sendMessage() {
-        guard !userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
         
         let userMessage = Conversation(
-            message: userInput,
+            message: trimmed,
             isFromUser: true,
             timestamp: Date()
         )
@@ -327,8 +365,22 @@ struct CompanionView: View {
             showInputArea = false
         }
         
-        // Luma思考状态
-        lumaEmotion = .curious
+        // 关键词触发情绪（happy/sad/tired）
+        let lower = trimmed.lowercased()
+        if lower.contains("happy") || lower.contains("开心") || lower.contains("高兴") {
+            print("🎉 设置情绪为: happy")
+            lumaEmotion = .happy
+        } else if lower.contains("sad") || lower.contains("难过") || lower.contains("伤心") {
+            print("😢 设置情绪为: sad")
+            lumaEmotion = .sad
+        } else if lower.contains("tired") || lower.contains("困") || lower.contains("zzz") || lower.contains("困了") {
+            print("😴 设置情绪为: tired")
+            lumaEmotion = .tired
+        } else {
+            print("🤔 设置情绪为: curious")
+            // 未命中关键词：进入好奇倾听
+            lumaEmotion = .curious
+        }
         
         // 显示用户消息气泡
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -347,7 +399,7 @@ struct CompanionView: View {
             
             withAnimation(.spring()) {
                 conversations.append(aiReply)
-                lumaEmotion = .happy
+                // 不再强制切换到happy，保持用户触发的情绪
                 showConversationBubble = false
             }
             
@@ -394,7 +446,7 @@ struct CompanionView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 isListening = false
                 userInput = "Content just entered via voice input"
-                lumaEmotion = .happy
+                // 不再强制设置为happy，保持curious状态
             }
         }
     }
@@ -412,10 +464,30 @@ struct CompanionView: View {
             }
             .scaleEffect(lumaIsThinking ? 1.02 : 1.0)
             .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: lumaIsThinking)
+            if isDozing {
+                ZzzOverlay()
+                    .offset(x: 60, y: -140)
+            }
         }
         .frame(height: 400)
+        // 开心：上下弹跳（仅在happy时）
+        .offset(y: (lumaEmotion == .happy && isBouncing) ? -20 : 0)
+        .animation((lumaEmotion == .happy && isBouncing) ? .spring(response: 0.6, dampingFraction: 0.4).repeatForever(autoreverses: true) : .default, value: isBouncing)
         .onAppear {
             lumaIsThinking = true
+            // 根据初始情绪设置动画状态
+            switch lumaEmotion {
+            case .happy:
+                isBouncing = true
+                armsUp = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    armWave = true
+                }
+            case .tired:
+                isDozing = true
+            case .sad, .curious:
+                break // 保持默认状态
+            }
         }
     }
     
@@ -628,6 +700,9 @@ struct CompanionView: View {
                 .opacity(glowOpacity)
                 .animation(.easeInOut(duration: emotionAnimationDuration).repeatForever(autoreverses: true), value: lumaIsThinking)
         }
+        // 负面情绪：低头
+        .rotationEffect(lumaEmotion == .sad ? Angle(degrees: 12) : .degrees(0))
+        .offset(y: lumaEmotion == .sad ? 18 : 0)
     }
     
     // MARK: - 放大版Luma身体
@@ -651,21 +726,44 @@ struct CompanionView: View {
                         .offset(x: -40, y: -60)
                 )
             
+            // 手臂（根据情绪变化）
+            HStack(spacing: 280) {
+                // 左臂
+                Capsule()
+                    .fill(Color.white)
+                    .frame(width: 30, height: 80)
+                    .rotationEffect(.degrees(armsUp ? (armWave ? -50 : -70) : 15)) // Happy举手+摆动，平时自然垂放
+                    .offset(x: armsUp ? -15 : 0, y: armsUp ? -30 : 10)
+                
+                // 右臂
+                Capsule()
+                    .fill(Color.white)
+                    .frame(width: 30, height: 80)
+                    .rotationEffect(.degrees(armsUp ? (armWave ? 50 : 70) : -15)) // Happy举手+摆动，平时自然垂放
+                    .offset(x: armsUp ? 15 : 0, y: armsUp ? -30 : 10)
+            }
+            .offset(y: -40) // 手臂位置调整
+            .animation((lumaEmotion == .happy && armsUp) ? .spring(response: 0.8, dampingFraction: 0.6) : .spring(response: 0.6), value: armsUp)
+            .animation((lumaEmotion == .happy && armWave) ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true) : .default, value: armWave)
+            
             // 短腿（stubby legs）
             HStack(spacing: 60) {
                 // 左腿
                 Capsule()
                     .fill(Color.white)
                     .frame(width: 40, height: 60)
-                    .offset(y: 110)
+                    .offset(y: lumaEmotion == .sad ? 80 : 110) // Sad时腿部收起
                 
                 // 右腿
                 Capsule()
                     .fill(Color.white)
                     .frame(width: 40, height: 60)
-                    .offset(y: 110)
+                    .offset(y: lumaEmotion == .sad ? 80 : 110) // Sad时腿部收起
             }
         }
+        .offset(y: lumaEmotion == .sad ? 60 : 0) // Sad时整体坐低
+        .scaleEffect(lumaEmotion == .sad ? 0.9 : 1.0)
+        .animation(.spring(), value: lumaEmotion)
     }
     
     // MARK: - 放大版Luma眼睛
@@ -682,17 +780,24 @@ struct CompanionView: View {
     
     private var largeScaleLumaEye: some View {
         ZStack {
-            // 眼睛基础形状
-            Circle()
-                .fill(Color.black)
-                .frame(width: eyeWidth * 2, height: eyeHeight * 2)
-            
-            // 眼睛连接线（根据设计要求）
             if lumaEmotion == .happy {
+                EyeArc(smileUp: true)
+                    .stroke(Color.black, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .frame(width: 40, height: 24)
+            } else if lumaEmotion == .sad {
+                EyeArc(smileUp: false)
+                    .stroke(Color.black, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .frame(width: 40, height: 24)
+            } else if lumaEmotion == .tired {
+                // 困倦：闭眼（横线）
                 Rectangle()
                     .fill(Color.black)
                     .frame(width: 30, height: 4)
-                    .offset(x: 15)
+                    .cornerRadius(2)
+            } else {
+                Circle()
+                    .fill(Color.black)
+                    .frame(width: eyeWidth * 2, height: eyeHeight * 2)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: lumaEmotion)
@@ -712,17 +817,24 @@ struct CompanionView: View {
     
     private var lumaEye: some View {
         ZStack {
-            // 眼睛基础形状
-            Circle()
-                .fill(Color.black)
-                .frame(width: eyeWidth, height: eyeHeight)
-            
-            // 眼睛连接线（根据设计要求）
             if lumaEmotion == .happy {
+                EyeArc(smileUp: true)
+                    .stroke(Color.black, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: eyeWidth + 10, height: 12)
+            } else if lumaEmotion == .sad {
+                EyeArc(smileUp: false)
+                    .stroke(Color.black, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .frame(width: eyeWidth + 10, height: 12)
+            } else if lumaEmotion == .tired {
+                // 困倦：闭眼（横线）
                 Rectangle()
                     .fill(Color.black)
-                    .frame(width: 15, height: 2)
-                    .offset(x: 7.5)
+                    .frame(width: 20, height: 2)
+                    .cornerRadius(1)
+            } else {
+                Circle()
+                    .fill(Color.black)
+                    .frame(width: eyeWidth, height: eyeHeight)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: lumaEmotion)
@@ -755,15 +867,18 @@ struct CompanionView: View {
                 Capsule()
                     .fill(Color.white)
                     .frame(width: 20, height: 30)
-                    .offset(y: 55)
+                    .offset(y: lumaEmotion == .sad ? 35 : 55)
                 
                 // 右腿
                 Capsule()
                     .fill(Color.white)
                     .frame(width: 20, height: 30)
-                    .offset(y: 55)
+                    .offset(y: lumaEmotion == .sad ? 35 : 55)
             }
         }
+        // 坐下效果：整体下移并略缩小
+        .offset(y: lumaEmotion == .sad ? 30 : 0)
+        .scaleEffect(lumaEmotion == .sad ? 0.95 : 1.0)
     }
     
     // MARK: - Luma状态文字
@@ -847,6 +962,68 @@ enum LumaEmotion: CaseIterable {
     case sad
     case curious
     case tired
+}
+
+// MARK: - Zzz 漂浮标识
+struct ZzzOverlay: View {
+    @State private var up: Bool = false
+    @State private var opacity: Double = 0.3
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("Z")
+                .font(.headline)
+                .opacity(opacity + 0.5)
+                .offset(y: up ? -15 : 0)
+            Text("z")
+                .font(.title3)
+                .opacity(opacity + 0.3)
+                .offset(y: up ? -10 : 0)
+            Text("z")
+                .font(.caption)
+                .opacity(opacity + 0.1)
+                .offset(y: up ? -5 : 0)
+        }
+        .foregroundColor(.gray)
+        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: up)
+        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: opacity)
+        .onAppear { 
+            up = true
+            opacity = 0.8
+        }
+    }
+}
+
+// MARK: - 眼睛弧线（开心月牙/倒月牙）
+struct EyeArc: Shape {
+    let smileUp: Bool
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        
+        if smileUp {
+            // 开心月牙：向上弯曲（笑眼）
+            path.addArc(
+                center: CGPoint(x: center.x, y: center.y + radius * 0.2),
+                radius: radius,
+                startAngle: .degrees(200),
+                endAngle: .degrees(340),
+                clockwise: false
+            )
+        } else {
+            // 悲伤倒月牙：向下弯曲（哭眼）- 倒过来的弧
+            path.addArc(
+                center: CGPoint(x: center.x, y: center.y - radius * 0.4),
+                radius: radius * 0.8,
+                startAngle: .degrees(200),
+                endAngle: .degrees(340),
+                clockwise: true
+            )
+        }
+        return path
+    }
 }
 
 // MARK: - 简化的对话气泡

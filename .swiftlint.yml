@@ -1,0 +1,50 @@
+# SwiftLint 配置文件
+# 用于 iOS 代码质量检查
+
+disabled_rules: # 禁用的规则
+  - trailing_whitespace
+  - force_cast
+  - force_try
+
+opt_in_rules: # 启用的可选规则
+  - empty_count
+  - explicit_init
+  - first_where
+  - nimble_operator
+  - redundant_nil_coalescing
+
+included: # 包含的路径
+  - Luma
+
+excluded: # 排除的路径
+  - Carthage
+  - Pods
+  - Build
+  - DerivedData
+  - .build
+
+# 配置规则
+type_body_length:
+  - 500 # warning
+  - 700 # error
+
+file_length:
+  warning: 800
+  error: 1200
+
+function_body_length:
+  warning: 60
+  error: 100
+
+line_length:
+  warning: 180
+  error: 250
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_comments: true
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+reporter: "xcode" # reporter 类型
