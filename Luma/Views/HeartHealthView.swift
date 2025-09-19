@@ -21,12 +21,11 @@ struct HeartHealthView: View {
             Button {
                 print("🔔 Notification tapped")
             } label: {
-                Image(systemName: "bell.fill")          // 或 "bell"
+                Image(systemName: "bell.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.pink)              // iOS 15+ 推荐
-                    // .foregroundColor(.pink)           // 老写法，同样有效
+                    .foregroundStyle(.pink)
             }
-            .buttonStyle(.plain)                         // 避免系统把它再染成蓝色
+            .buttonStyle(.plain)
 
             // Avatar placeholder
             Circle()

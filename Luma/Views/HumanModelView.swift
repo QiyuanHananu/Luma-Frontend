@@ -13,15 +13,15 @@ struct HumanModelView: UIViewRepresentable {
     
     func makeUIView(context: Context) -> SCNView {
         let sceneView = SCNView()
-        sceneView.autoenablesDefaultLighting = true   // 保留默认光照，避免全黑
+        sceneView.autoenablesDefaultLighting = true   // default lighting
         sceneView.allowsCameraControl = true
-        sceneView.backgroundColor = .clear            // 去掉背景色，透明背景
+        sceneView.backgroundColor = .clear            // background
         
-        // 加载模型
+        // load model
         if let sceneURL = Bundle.main.url(forResource: "human_base", withExtension: "usdc"),
            let scene = try? SCNScene(url: sceneURL, options: nil) {
             
-            // ✅ 模型节点
+            // ✅ model node
             let modelNode = SCNNode()
             for child in scene.rootNode.childNodes {
                 modelNode.addChildNode(child)
@@ -33,7 +33,7 @@ struct HumanModelView: UIViewRepresentable {
             )
             modelNode.runAction(spin)
             
-            // ✅ 热点工厂
+            // ✅ hot spot factory
             func createHotspot(name: String, color: UIColor, position: SCNVector3) -> SCNNode {
                 let sphere = SCNSphere(radius: 0.1)
                 sphere.firstMaterial?.diffuse.contents = UIColor.clear
@@ -45,7 +45,7 @@ struct HumanModelView: UIViewRepresentable {
                 return node
             }
             
-            // ✅ 添加热点（位置保持不变）
+            // ✅ add some hotspots
             let heartHotspot = createHotspot(name: "HeartHotspot", color: .red, position: SCNVector3(-2.26, -0.12, 1.2))
             let headHotspot = createHotspot(name: "HeadHotspot", color: .blue, position: SCNVector3(-2.26, -0.08, 1.6))
             let stomachHotspot = createHotspot(name: "StomachHotspot", color: .green, position: SCNVector3(-2.26, -0.1, 1.15))
@@ -59,13 +59,13 @@ struct HumanModelView: UIViewRepresentable {
                 modelNode.addChildNode($0)
             }
             
-            // ✅ 场景
+            // ✅ scene
             let newScene = SCNScene()
             newScene.rootNode.addChildNode(modelNode)
             sceneView.scene = newScene
         }
         
-        // ✅ 点击事件
+        // ✅ click
         let tapGesture = UITapGestureRecognizer(target: context.coordinator,
                                                 action: #selector(Coordinator.handleTap(_:)))
         sceneView.addGestureRecognizer(tapGesture)
@@ -95,7 +95,7 @@ struct HumanModelView: UIViewRepresentable {
                 let nodeName = result.node.name ?? "unknown"
                 print("👉 You clicked on: \(nodeName)")
                 
-                // 🚨 如果不是热点，直接返回，不做任何处理
+                // if not a hotspot -> return
                         let hotspotNames: Set<String> = [
                             "HeartHotspot", "HeadHotspot", "StomachHotspot",
                             "AbdomenHotspot", "LeftArmHotspot", "RightArmHotspot",
@@ -103,7 +103,7 @@ struct HumanModelView: UIViewRepresentable {
                         ]
                         guard hotspotNames.contains(nodeName) else { return }
                 
-                // ✅ 通用光圈动画
+                // ✅ Universal aperture animation
                 let pulse = SCNPlane(width: 0.1, height: 0.1)
                 pulse.cornerRadius = 0.1
                 pulse.firstMaterial?.diffuse.contents = UIColor.cyan.withAlphaComponent(0.6)
@@ -112,7 +112,7 @@ struct HumanModelView: UIViewRepresentable {
                 
                 let pulseNode = SCNNode(geometry: pulse)
                 var pulsePosition = result.node.worldPosition
-                pulsePosition.z += 0.15  // 固定往外偏移一点，保证不会卡进身体
+                pulsePosition.z += 0.15  // Fix it slightly outward
                 pulseNode.position = pulsePosition
                 pulseNode.constraints = [SCNBillboardConstraint()]
                 
@@ -124,18 +124,18 @@ struct HumanModelView: UIViewRepresentable {
                 sceneView.scene?.rootNode.addChildNode(pulseNode)
                 pulseNode.runAction(sequence)
                 
-                // ✅ 跳转逻辑
+                // ✅ redirection
                 switch nodeName {
                 case "HeartHotspot":
                     parent.navigateToHeartRate = true
                 case "HeadHotspot":
-                    print("👉 跳转到头部页面")
+                    print("👉 jump to head page")
                 case "StomachHotspot":
-                    print("👉 跳转到胃部页面")
+                    print("👉 jump to stomach page")
                 case "AbdomenHotspot":
-                    print("👉 跳转到腹部页面")
+                    print("👉 jump to abdomen page")
                 case "LeftArmHotspot", "RightArmHotspot":
-                    print("👉 跳转到手臂页面")
+                    print("👉 jump to arm page")
                 default:
                     break
                 }

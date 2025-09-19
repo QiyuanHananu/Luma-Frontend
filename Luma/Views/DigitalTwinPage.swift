@@ -14,12 +14,7 @@ struct DigitalTwinPage: View {
     var body: some View {
         ZStack {
             // background
-            LinearGradient(
-                gradient: Gradient(colors: [Color.white, Color(.systemGray6)]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Color(.systemBackground).ignoresSafeArea()
             
             VStack(spacing: 16) {
                 // title
@@ -33,11 +28,12 @@ struct DigitalTwinPage: View {
                 // human base
                 HumanModelView(navigateToHeartRate: $navigateToHeartRate)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.clear)
                 
                 // hint
-                Text("Tap a body area to see insights ✨")
+                Text("Tap a body area to see insights")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
                     .padding(.bottom, 20)
             }
         }

@@ -13,7 +13,8 @@ struct BrainHealthView: View {
     @State private var isListening = false
     @State private var trendSelection = "Sleep Quality"
     @State private var healthTip = "Your sleep duration improved this week. Keep the habit!"
-
+    private let gutter: CGFloat = 10
+    
     var body: some View {
             
         ZStack(alignment: .bottom) {
@@ -21,13 +22,14 @@ struct BrainHealthView: View {
 
                 // Top bar
                 HStack {
-                    Text("    Brain Health")
+                    Text("Brain Health")
                         .font(.headline)
+                        .padding(.horizontal, gutter)
                     Spacer()
                     Button {
                         print("🔔 Notification tapped")
                     } label: {
-                        Image(systemName: "bell")
+                        Image(systemName: "bell.fill")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(.primary)
                     }
@@ -40,6 +42,7 @@ struct BrainHealthView: View {
                         .overlay(Image(systemName: "person.fill").font(.caption))
                 }
                 .padding(.top, 8)
+                .padding(.horizontal, gutter)
 
             // Scrollable content
             ScrollView {
@@ -84,18 +87,24 @@ struct BrainHealthView: View {
 
                     // Trend section (blue/white)
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text(trendSelection)
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Sleep Quality")
                                 .font(.headline)
-                                .foregroundColor(.secondary)
-                            Spacer()
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)                 // line limit
+                                .minimumScaleFactor(0.9)
+                                .layoutPriority(1)
+
+                            Spacer(minLength: 12)
+
                             Picker("", selection: $trendSelection) {
                                 Text("Sleep Quality").tag("Sleep Quality")
                                 Text("Stress Level").tag("Stress Level")
                             }
                             .pickerStyle(.segmented)
-                            .frame(width: 260)
+                            .frame(maxWidth: 220)// Give a maximum width to fit the small screen
                         }
+                        
 
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(.secondarySystemBackground))
