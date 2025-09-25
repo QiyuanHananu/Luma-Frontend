@@ -12,18 +12,19 @@ struct HeartHealthView: View {
     @State private var isListening = false
     @State private var trendSelection = "Heart Rate"
     @State private var healthTip = "Your blood pressure is stable today. Keep it up!"
-
+    private let gutter: CGFloat = 10
     var body: some View {
         HStack {
-            Text("    Your Health Manager")
+            Text("Your Health Manager")
                 .font(.headline)
+                .padding(.horizontal,gutter)
             Spacer()
             Button {
                 print("🔔 Notification tapped")
             } label: {
                 Image(systemName: "bell.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.pink)
+                    .foregroundStyle(.orange)
             }
             .buttonStyle(.plain)
 
@@ -32,6 +33,7 @@ struct HeartHealthView: View {
                 .fill(Color.gray.opacity(0.2))
                 .frame(width: 32, height: 32)
                 .overlay(Image(systemName: "person.fill").font(.caption))
+                .padding(.horizontal,gutter)
         }
         .padding(.top, 8)
         ZStack(alignment: .bottom) {
@@ -40,14 +42,14 @@ struct HeartHealthView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
 
-                    TopBadgeIcon(symbol: "stethoscope", color: .pink)
+                    TopBadgeIcon(symbol: "stethoscope", color: .orange)
                         .frame(maxWidth: .infinity)
 
                     // cards
                     HStack(spacing: 12) {
-                        FlatStatCard(title: "Heart Rate", value: "72 bpm", tint: .pink)
+                        FlatStatCard(title: "Heart Rate", value: "72 bpm", tint: .orange)
                             .onTapGesture { trendSelection = "Heart Rate" }
-                        FlatStatCard(title: "Blood Pressure", value: "118/76", tint: .pink)
+                        FlatStatCard(title: "Blood Pressure", value: "118/76", tint: .orange)
                             .onTapGesture { trendSelection = "Blood Pressure" }
                     }
 
@@ -96,7 +98,7 @@ struct HeartHealthView: View {
 
             // Floating voice button (fixed at bottom-center)
             LongPressVoiceButton(isListening: $isListening,
-                                 color: .pink,
+                                 color: .orange,
                                  minDuration: 0.5,
                                  baseDiameter: 64,
                                  ringCount: 3) {
@@ -110,27 +112,39 @@ struct HeartHealthView: View {
     }
 }
 
-// MARK: - top badge icon
-
+// MARK: - Reusable top badge icon with halo
 struct TopBadgeIcon: View {
     let symbol: String
     let color: Color
 
+    // Tunables
+    var haloDiameter: CGFloat = 180          // halo
+    var iconSize: CGFloat = 120              // label
+    var glowOpacity: CGFloat = 0.18          // halo opacity
+    var haloEndRadius: CGFloat = 100         // halo radius
+    var mode: SymbolRenderingMode = .palette // .palette / .hierarchical / .multicolor
+    var mono: Bool = false
+
     var body: some View {
         ZStack {
+            // Halo
             Circle()
                 .fill(
-                    RadialGradient(colors: [color.opacity(0.18), .clear],
-                                   center: .center, startRadius: 2, endRadius: 120)
+                    RadialGradient(
+                        colors: [color.opacity(glowOpacity), .clear],
+                        center: .center,
+                        startRadius: 2, endRadius: haloEndRadius
+                    )
                 )
-                .frame(width: 220, height: 220)
+                .frame(width: haloDiameter, height: haloDiameter)
 
+            // Icon
             Image(systemName: symbol)
                 .resizable()
                 .scaledToFit()
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(.white, color)
-                .frame(width: 120, height: 120)
+                .symbolRenderingMode(mode)
+                .foregroundStyle(mono ? AnyShapeStyle(color) : AnyShapeStyle(.white), AnyShapeStyle(color))
+                .frame(width: iconSize, height: iconSize)
                 .shadow(color: color.opacity(0.25), radius: 12, y: 4)
         }
     }
@@ -203,7 +217,10 @@ struct LongPressVoiceButton: View {
         }
     }
 }
-    
+
+
+
+// MARK: - Metric card
 struct MetricCard: View {
     var title: String
     var value: String
@@ -247,8 +264,9 @@ struct MetricCard: View {
         .buttonStyle(.plain)
     }
 }
-    
-// Center-outward glowing ripple
+   
+
+// MARK: - Center-outward glowing ripple
 struct GlowPulse: View {
     var color: Color = .pink
     var base: CGFloat = 48            // Base diameter (≈ button size)
@@ -295,6 +313,7 @@ struct GlowPulse: View {
 }
 
 
+// MARK: - Flat container card
 struct FlatContainerCard<Content: View>: View {
     var content: Content
     init(@ViewBuilder content: () -> Content) { self.content = content() }

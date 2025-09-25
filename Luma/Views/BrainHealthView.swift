@@ -47,34 +47,11 @@ struct BrainHealthView: View {
             // Scrollable content
             ScrollView {
 
-                    // Brain icon + halo
-                    ZStack {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [Color.blue.opacity(0.18), .clear],
-                                    center: .center, startRadius: 2, endRadius: 120
-                                )
-                            )
-                            .frame(width: 220, height: 220)
-
-                        if UIImage(named: "brainIcon") != nil {
-                            Image("brainIcon")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 120, height: 120)
-                                .shadow(color: .blue.opacity(0.35), radius: 20)
-                        } else {
-                            Image(systemName: "brain")
-                                .resizable()
-                                .scaledToFit()
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.blue)
-                                .frame(width: 120, height: 120)
-                                .shadow(color: .blue.opacity(0.35), radius: 20)
-                        }
-                    }
+                // Brain icon + halo
+                TopBadgeIcon(symbol: "brain", color: .blue)
                     .frame(maxWidth: .infinity)
+                    
+                Spacer()
 
                     // Cards row (Sleep Quality / Stress Level)
                     HStack(spacing: 12) {
