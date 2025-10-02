@@ -12,6 +12,11 @@
 
 import SwiftUI
 
+// MARK: - 健康状态枚举
+enum HealthStatus {
+    case excellent, good, fair, poor
+}
+
 // MARK: - 健康概览卡片
 struct HealthOverviewCard: View {
     let icon: String

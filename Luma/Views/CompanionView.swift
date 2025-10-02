@@ -26,6 +26,7 @@ struct CompanionView: View {
     @State private var isDozing = false
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
+    @State private var showMedicalDashboard = false // 显示医疗仪表板
     
     var body: some View {
         NavigationView {
@@ -92,6 +93,9 @@ struct CompanionView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showMedicalDashboard) {
+            SimpleMedicalDashboardView()
         }
     }
     
@@ -163,17 +167,34 @@ struct CompanionView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    // 紧急求助
-                }) {
-                    Image(systemName: "phone.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.red)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.9))
-                                .frame(width: 44, height: 44)
-                        )
+                HStack(spacing: 12) {
+                    Button(action: {
+                        showMedicalDashboard = true
+                    }) {
+                        Image(systemName: "stethoscope.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
+                    .accessibilityLabel("医疗仪表板")
+                    .accessibilityHint("查看专业医疗数据和分析报告")
+                    
+                    Button(action: {
+                        // 紧急求助
+                    }) {
+                        Image(systemName: "phone.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.red)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
                 }
             }
             .padding(.horizontal, 20)
