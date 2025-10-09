@@ -26,7 +26,13 @@ struct CompanionView: View {
     @State private var isDozing = false
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
-    @State private var showMedicalDashboard = false // 显示医疗仪表板
+    @State private var showMenu = false // 显示菜单
+    
+    // 导航状态
+    @State private var showSettings = false
+    @State private var showMedicalDashboard = false
+    @State private var showBrainHealth = false
+    @State private var showHeartHealth = false
     
     var body: some View {
         NavigationView {
@@ -94,8 +100,17 @@ struct CompanionView: View {
                 }
             }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
+        }
+        .sheet(isPresented: $showBrainHealth) {
+            BrainHealthView()
+        }
+        .sheet(isPresented: $showHeartHealth) {
+            HeartHealthView()
         }
     }
     
@@ -143,18 +158,45 @@ struct CompanionView: View {
     private var topControls: some View {
         VStack {
             HStack {
-                Button(action: {
-                    withAnimation {
-                        showHealthSnapshot.toggle()
+                // 左上角菜单按钮
+                Menu {
+                    // 健康数据
+                    Section("Health Data") {
+                        Button(action: { showMedicalDashboard = true }) {
+                            Label("Medical Dashboard", systemImage: "stethoscope.circle.fill")
+                        }
+                        
+                        Button(action: { showBrainHealth = true }) {
+                            Label("Brain Health", systemImage: "brain.head.profile")
+                        }
+                        
+                        Button(action: { showHeartHealth = true }) {
+                            Label("Heart Health", systemImage: "heart.fill")
+                        }
                     }
-                }) {
-                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                    
+                    // 其他功能
+                    Section("More") {
+                        Button(action: { 
+                            withAnimation {
+                                showHealthSnapshot.toggle()
+                            }
+                        }) {
+                            Label("Health Snapshot", systemImage: "chart.line.uptrend.xyaxis")
+                        }
+                        
+                        Button(action: { showSettings = true }) {
+                            Label("Settings", systemImage: "gear")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal")
                         .font(.title2)
                         .foregroundColor(.blue)
+                        .frame(width: 44, height: 44)
                         .background(
                             Circle()
                                 .fill(Color.white.opacity(0.9))
-                                .frame(width: 44, height: 44)
                         )
                 }
                 
@@ -167,35 +209,9 @@ struct CompanionView: View {
                 
                 Spacer()
                 
-                HStack(spacing: 12) {
-                    Button(action: {
-                        showMedicalDashboard = true
-                    }) {
-                        Image(systemName: "stethoscope.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.9))
-                                    .frame(width: 44, height: 44)
-                            )
-                    }
-                    .accessibilityLabel("医疗仪表板")
-                    .accessibilityHint("查看专业医疗数据和分析报告")
-                    
-                    Button(action: {
-                        // 紧急求助
-                    }) {
-                        Image(systemName: "phone.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.red)
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.9))
-                                    .frame(width: 44, height: 44)
-                            )
-                    }
-                }
+                // 右侧占位，保持标题居中
+                Color.clear
+                    .frame(width: 44, height: 44)
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
