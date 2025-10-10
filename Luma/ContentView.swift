@@ -48,26 +48,12 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            DigitalTwinView()
-                .tabItem {
-                    Image(systemName: "person.crop.circle.fill")
-                    Text("My Digital Twin")
-                }
-                .tag(1)
-            
-            CopingSkillsView()
-                .tabItem {
-                    Image(systemName: "leaf.circle.fill")
-                    Text("Coping Skills View")
-                }
-                .tag(2)
-            
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear.circle.fill")
                     Text("Settings")
                 }
-                .tag(3)
+                .tag(1)
         }
         .accentColor(.blue)
     }
