@@ -1,0 +1,344 @@
+[
+    {
+        "user_id": "u001",
+        "timestamp": "2025-10-10T09:00:00Z",
+        "age_band": "adult",
+        "message": "I’ve been feeling tense all morning.",
+        "response": "It might be a stressful day. Let’s take a short breathing break together and review your stress trend afterward.",
+        "suggested_actions": ["breathing_2min", "check_stress", "log_feeling"],
+        "tags": ["stress", "focus"]
+    },
+    {
+        "user_id": "u002",
+        "timestamp": "2025-10-10T09:10:00Z",
+        "age_band": "adult",
+        "message": "Didn’t sleep much last night.",
+        "response": "That happens. Want to check how your sleep quality affected your focus today and plan a better night’s rest?",
+        "suggested_actions": ["check_sleep", "focus_review", "bedtime_plan"],
+        "tags": ["sleep", "energy"]
+    },
+    {
+        "user_id": "u003",
+        "timestamp": "2025-10-10T09:15:00Z",
+        "age_band": "adult",
+        "message": "My heart rate seems higher than usual.",
+        "response": "Let’s take a look at your heart rate trend. If it stays elevated, we can go over your recent activity and stress levels.",
+        "suggested_actions": ["check_hr", "view_trends", "activity_review"],
+        "tags": ["heart", "health"]
+    },
+    {
+        "user_id": "u004",
+        "timestamp": "2025-10-10T09:25:00Z",
+        "age_band": "adult",
+        "message": "I’ve been skipping meals again.",
+        "response": "Your energy matters. Would you like me to remind you to eat something light around lunch today?",
+        "suggested_actions": ["meal_reminder", "nutrition_tip"],
+        "tags": ["routine", "nutrition"]
+    },
+    {
+        "user_id": "u005",
+        "timestamp": "2025-10-10T09:40:00Z",
+        "age_band": "older_adult",
+        "message": "Feeling a bit dizzy this morning.",
+        "response": "Let’s check your recent blood pressure and hydration levels to be sure everything’s stable.",
+        "suggested_actions": ["check_bp", "hydrate", "log_symptom"],
+        "tags": ["bp", "hydration"]
+    },
+    {
+        "user_id": "u006",
+        "timestamp": "2025-10-10T09:45:00Z",
+        "age_band": "adult",
+        "message": "Can you summarize my week so far?",
+        "response": "Sure. I’ll show your sleep, stress, and heart data together so you can see your balance over the week.",
+        "suggested_actions": ["weekly_summary", "trend_compare"],
+        "tags": ["overview", "tracking"]
+    },
+    {
+        "user_id": "u007",
+        "timestamp": "2025-10-10T09:50:00Z",
+        "age_band": "adult",
+        "message": "I’m exhausted but still can’t fall asleep easily.",
+        "response": "Let’s adjust your wind-down plan. Would you like a calmer routine before bed tonight?",
+        "suggested_actions": ["winddown_plan", "sleep_log"],
+        "tags": ["sleep", "routine"]
+    },
+    {
+        "user_id": "u008",
+        "timestamp": "2025-10-10T10:00:00Z",
+        "age_band": "adult",
+        "message": "My watch didn’t sync again.",
+        "response": "No problem. Let’s reconnect it together and make sure your data is flowing correctly.",
+        "suggested_actions": ["device_reconnect", "permissions_help"],
+        "tags": ["device", "setup"]
+    },
+    {
+        "user_id": "u009",
+        "timestamp": "2025-10-10T10:05:00Z",
+        "age_band": "adult",
+        "message": "I feel like my focus keeps drifting today.",
+        "response": "That’s understandable. Want to try a 2-minute reset or review your sleep quality from last night?",
+        "suggested_actions": ["focus_reset", "check_sleep"],
+        "tags": ["focus", "sleep"]
+    },
+    {
+        "user_id": "u010",
+        "timestamp": "2025-10-10T10:10:00Z",
+        "age_band": "adult",
+        "message": "Been getting mild headaches lately.",
+        "response": "Let’s log that and review hydration and screen time—those can often play a role.",
+        "suggested_actions": ["hydrate", "screen_break_tip", "symptom_log"],
+        "tags": ["pain", "hydration"]
+    },
+    {
+        "user_id": "u011",
+        "timestamp": "2025-10-10T10:20:00Z",
+        "age_band": "adult",
+        "message": "Couldn’t finish my workout today.",
+        "response": "That’s alright. I can adjust your plan to match your energy level. Consistency matters more than intensity.",
+        "suggested_actions": ["adjust_workout", "log_activity"],
+        "tags": ["fitness", "energy"]
+    },
+    {
+        "user_id": "u012",
+        "timestamp": "2025-10-10T10:30:00Z",
+        "age_band": "older_adult",
+        "message": "I woke up twice last night.",
+        "response": "Thanks for noting that. Let’s look at your sleep graph and see what might be disturbing your rest.",
+        "suggested_actions": ["sleep_timeline", "bedtime_review"],
+        "tags": ["sleep", "rest"]
+    },
+    {
+        "user_id": "u013",
+        "timestamp": "2025-10-10T10:40:00Z",
+        "age_band": "adult",
+        "message": "I’m feeling low on motivation today.",
+        "response": "Let’s take it one step at a time. A short break or a small task can help bring back focus.",
+        "suggested_actions": ["short_break", "tiny_task"],
+        "tags": ["motivation", "focus"]
+    },
+    {
+        "user_id": "u014",
+        "timestamp": "2025-10-10T10:45:00Z",
+        "age_band": "adult",
+        "message": "My blood pressure is slightly high.",
+        "response": "Let’s track it for the next few days and check if it’s consistent. Avoid caffeine for now if possible.",
+        "suggested_actions": ["check_bp", "log_bp", "diet_tip"],
+        "tags": ["bp", "heart"]
+    },
+    {
+        "user_id": "u015",
+        "timestamp": "2025-10-10T11:00:00Z",
+        "age_band": "adult",
+        "message": "Been sitting too long again.",
+        "response": "Got it. Time for a stretch. I can set a gentle reminder every hour if that helps.",
+        "suggested_actions": ["movement_prompt", "stretch_tip"],
+        "tags": ["routine", "movement"]
+    },
+    {
+        "user_id": "u016",
+        "timestamp": "2025-10-10T11:05:00Z",
+        "age_band": "adult",
+        "message": "Just feeling off today.",
+        "response": "That’s okay. We can check your recent health data together and see if something stands out.",
+        "suggested_actions": ["view_summary", "mood_log"],
+        "tags": ["mood", "overview"]
+    },
+    {
+        "user_id": "u017",
+        "timestamp": "2025-10-10T11:15:00Z",
+        "age_band": "older_adult",
+        "message": "I’ve been losing my appetite.",
+        "response": "Let’s note it and monitor for a few days. I can also suggest lighter meals if you’d like.",
+        "suggested_actions": ["log_appetite", "nutrition_tip"],
+        "tags": ["nutrition", "health"]
+    },
+    {
+        "user_id": "u018",
+        "timestamp": "2025-10-10T11:25:00Z",
+        "age_band": "adult",
+        "message": "I can’t stop thinking about work.",
+        "response": "It’s tough to switch off. Let’s schedule a 5-minute pause and try a simple relaxation guide.",
+        "suggested_actions": ["pause_reminder", "breathing_guide"],
+        "tags": ["stress", "routine"]
+    },
+    {
+        "user_id": "u019",
+        "timestamp": "2025-10-10T11:30:00Z",
+        "age_band": "adult",
+        "message": "Can you show my heart rate from yesterday?",
+        "response": "Sure. I’ll open your chart and highlight any spikes or drops.",
+        "suggested_actions": ["check_hr", "view_trends"],
+        "tags": ["heart", "data"]
+    },
+    {
+        "user_id": "u020",
+        "timestamp": "2025-10-10T11:40:00Z",
+        "age_band": "adult",
+        "message": "I forgot my medication this morning.",
+        "response": "No problem. I can remind you next time and log this skip for your record.",
+        "suggested_actions": ["med_reminder", "med_log"],
+        "tags": ["medication", "routine"]
+    },
+    {
+        "user_id": "u021",
+        "timestamp": "2025-10-10T11:50:00Z",
+        "age_band": "adult",
+        "message": "Having trouble staying focused.",
+        "response": "Would you like to try a quick focus exercise and see your productivity trend afterward?",
+        "suggested_actions": ["focus_reset", "trend_check"],
+        "tags": ["focus", "productivity"]
+    },
+    {
+        "user_id": "u022",
+        "timestamp": "2025-10-10T12:00:00Z",
+        "age_band": "adult",
+        "message": "Feeling lonely lately.",
+        "response": "I hear you. Maybe reaching out to someone or joining a short activity could help. Want me to suggest one?",
+        "suggested_actions": ["social_prompt", "activity_suggestion"],
+        "tags": ["social", "mood"]
+    },
+    {
+        "user_id": "u023",
+        "timestamp": "2025-10-10T12:05:00Z",
+        "age_band": "adult",
+        "message": "Skipped lunch again.",
+        "response": "Let’s make sure you refuel soon. I can set a gentle lunchtime reminder for tomorrow.",
+        "suggested_actions": ["meal_reminder", "nutrition_tip"],
+        "tags": ["routine", "nutrition"]
+    },
+    {
+        "user_id": "u024",
+        "timestamp": "2025-10-10T12:10:00Z",
+        "age_band": "older_adult",
+        "message": "I’m walking less these days.",
+        "response": "A small step counts. Want to add a daily walk goal to your dashboard?",
+        "suggested_actions": ["walk_goal", "activity_log"],
+        "tags": ["movement", "routine"]
+    },
+    {
+        "user_id": "u025",
+        "timestamp": "2025-10-10T12:20:00Z",
+        "age_band": "adult",
+        "message": "I’ve been sitting in front of the screen too long.",
+        "response": "Understood. I can set short breaks and eye-care tips for you today.",
+        "suggested_actions": ["screen_break", "eye_tip"],
+        "tags": ["routine", "health"]
+    },
+    {
+        "user_id": "u026",
+        "timestamp": "2025-10-10T12:30:00Z",
+        "age_band": "adult",
+        "message": "I can’t tell if I’m stressed or just tired.",
+        "response": "Let’s review your sleep data and stress markers. That’ll help us figure out what your body’s saying.",
+        "suggested_actions": ["check_stress", "check_sleep"],
+        "tags": ["stress", "sleep"]
+    },
+    {
+        "user_id": "u027",
+        "timestamp": "2025-10-10T12:40:00Z",
+        "age_band": "adult",
+        "message": "My smartwatch isn’t showing data.",
+        "response": "Let’s fix that together. I’ll guide you through reconnecting and permissions.",
+        "suggested_actions": ["device_reconnect", "permissions_help"],
+        "tags": ["device", "setup"]
+    },
+    {
+        "user_id": "u028",
+        "timestamp": "2025-10-10T12:45:00Z",
+        "age_band": "adult",
+        "message": "I feel better after that short walk.",
+        "response": "That’s great! Let’s log this so your daily activity reflects it.",
+        "suggested_actions": ["log_activity", "celebrate_progress"],
+        "tags": ["movement", "motivation"]
+    },
+    {
+        "user_id": "u029",
+        "timestamp": "2025-10-10T12:55:00Z",
+        "age_band": "adult",
+        "message": "Can you remind me to drink more water?",
+        "response": "Sure. I’ll nudge you gently every few hours today to keep you hydrated.",
+        "suggested_actions": ["hydrate_reminder", "hydrate"],
+        "tags": ["hydration", "routine"]
+    },
+    {
+        "user_id": "u030",
+        "timestamp": "2025-10-10T13:00:00Z",
+        "age_band": "adult",
+        "message": "Having trouble staying motivated for workouts.",
+        "response": "How about setting smaller, 10-minute goals for now? We’ll build it up gradually.",
+        "suggested_actions": ["goal_adjust", "short_workout"],
+        "tags": ["fitness", "motivation"]
+    },
+    {
+        "user_id": "u031",
+        "timestamp": "2025-10-10T13:05:00Z",
+        "age_band": "adult",
+        "message": "My resting heart rate increased recently.",
+        "response": "Thanks for noticing. Let’s compare this week’s average to last week and see what changed.",
+        "suggested_actions": ["check_hr", "trend_compare"],
+        "tags": ["heart", "trend"]
+    },
+    {
+        "user_id": "u032",
+        "timestamp": "2025-10-10T13:10:00Z",
+        "age_band": "older_adult",
+        "message": "I felt short of breath after climbing stairs.",
+        "response": "Let’s review your oxygen level and pulse. I’ll flag anything unusual for you.",
+        "suggested_actions": ["check_spo2", "check_hr", "log_symptom"],
+        "tags": ["heart", "spo2"]
+    },
+    {
+        "user_id": "u033",
+        "timestamp": "2025-10-10T13:20:00Z",
+        "age_band": "adult",
+        "message": "Can you show my progress since last month?",
+        "response": "Of course. Here’s your month’s progress for sleep, activity, and stress balance.",
+        "suggested_actions": ["monthly_summary", "trend_compare"],
+        "tags": ["overview", "tracking"]
+    },
+    {
+        "user_id": "u034",
+        "timestamp": "2025-10-10T13:25:00Z",
+        "age_band": "adult",
+        "message": "I’ve been feeling anxious lately.",
+        "response": "I hear you. Let’s take a 2-minute calming exercise and check your heart variability afterward.",
+        "suggested_actions": ["breathing_2min", "check_hrv"],
+        "tags": ["anxiety", "heart"]
+    },
+    {
+        "user_id": "u035",
+        "timestamp": "2025-10-10T13:30:00Z",
+        "age_band": "adult",
+        "message": "I just want to see how I’m doing overall.",
+        "response": "Let’s open your health dashboard for today. It’ll give you a clear summary of your balance and rest.",
+        "suggested_actions": ["view_summary", "check_sleep"],
+        "tags": ["overview", "balance"]
+    },
+    {
+        "user_id": "u036",
+        "timestamp": "2025-10-10T13:40:00Z",
+        "age_band": "adult",
+        "message": "I’m fine physically, just emotionally drained.",
+        "response": "That’s understandable. Let’s log this moment and take a small kindness break for yourself.",
+        "suggested_actions": ["mood_log", "selfcare_tip"],
+        "tags": ["mood", "stress"]
+    },
+    {
+        "user_id": "u037",
+        "timestamp": "2025-10-10T13:50:00Z",
+        "age_band": "adult",
+        "message": "Can we review my sleep from last week?",
+        "response": "Yes. I’ll show your sleep stages and total duration each night, so you can spot what helps you rest best.",
+        "suggested_actions": ["sleep_timeline", "trend_compare"],
+        "tags": ["sleep", "overview"]
+    },
+    {
+        "user_id": "u038",
+        "timestamp": "2025-10-10T13:55:00Z",
+        "age_band": "adult",
+        "message": "I think I’m overworking again.",
+        "response": "Let’s review your screen time and heart rate patterns. Maybe we can schedule short pauses tomorrow.",
+        "suggested_actions": ["screen_break", "trend_review"],
+        "tags": ["stress"]
+    }
+]
