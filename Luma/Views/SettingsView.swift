@@ -58,7 +58,7 @@ struct SettingsView: View {
             ProfileView()
         }
         .sheet(isPresented: $showingPrivacySheet) {
-            PrivacySettingsView()
+            PrivacySecurityView()
         }
         .sheet(isPresented: $showingAbout) {
             AboutView()

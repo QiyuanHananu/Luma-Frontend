@@ -308,7 +308,7 @@ Menu {
 | 生物识别数据 | `BiometricDataView.swift` | 详细数据记录 | ⚠️ 未集成 |
 | 行为模式 | `BehavioralPatternsView.swift` | AI行为分析 | ⚠️ 未集成 |
 | 导出分享 | `ExportSharingView.swift` | 数据导出 | ⚠️ 未集成 |
-| 隐私安全 | `PrivacySecurityView.swift` | 隐私设置 | ⚠️ 未集成 |
+| 隐私安全 | `PrivacySecurityView.swift` | 隐私设置 | ✅ 已集成到SettingsView |
 | 完整医疗仪表板 | `MedicalDashboardView.swift` | Charts版本 | ⚠️ 暂未使用 |
 | 用户档案 | `ProfileView.swift` | 个人资料 | ✅ 已集成到SettingsView |
 
@@ -364,8 +364,8 @@ Menu {
 
 ## 📊 统计信息
 
-- **已集成页面数量**：10个
-- **未集成页面数量**：8个
+- **已集成页面数量**：12个
+- **未集成页面数量**：6个
 - **已删除页面数量**：4个
 - **总计页面数量**：22个文件
 
