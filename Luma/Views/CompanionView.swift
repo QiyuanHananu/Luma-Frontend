@@ -33,6 +33,7 @@ struct CompanionView: View {
     @State private var showMedicalDashboard = false
     @State private var showBrainHealth = false
     @State private var showHeartHealth = false
+    @State private var showDigitalTwin = false
     
     var body: some View {
         NavigationView {
@@ -100,6 +101,9 @@ struct CompanionView: View {
                 }
             }
         }
+        .sheet(isPresented: $showDigitalTwin) {
+            DigitalTwinPage()
+        }
         .sheet(isPresented: $showSettings) {
             SettingsView()
         }
@@ -160,6 +164,13 @@ struct CompanionView: View {
             HStack {
                 // 左上角菜单按钮
                 Menu {
+                    // 主要功能
+                    Section("Main Features") {
+                        Button(action: { showDigitalTwin = true }) {
+                            Label("Digital Twin", systemImage: "figure.stand")
+                        }
+                    }
+                    
                     // 健康数据
                     Section("Health Data") {
                         Button(action: { showMedicalDashboard = true }) {
