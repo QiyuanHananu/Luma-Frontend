@@ -55,7 +55,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
         }
         .sheet(isPresented: $showingProfileEdit) {
-            ProfileEditView()
+            ProfileView()
         }
         .sheet(isPresented: $showingPrivacySheet) {
             PrivacySettingsView()
