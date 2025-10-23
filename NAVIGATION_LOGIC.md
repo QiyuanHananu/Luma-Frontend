@@ -36,6 +36,9 @@ AppEntryView (判断是否首次启动)
 
 点击左上角的 ☰ 菜单按钮，会显示下拉菜单，包含以下选项：
 
+**主要功能 (Main Features)**
+- **Digital Twin** 🧍 → 跳转到 `DigitalTwinPage`
+
 **健康数据 (Health Data)**
 - **Medical Dashboard** 🩺 → 跳转到 `SimpleMedicalDashboardView`
 - **Brain Health** 🧠 → 跳转到 `BrainHealthView`
@@ -62,8 +65,7 @@ AppEntryView (判断是否首次启动)
 - 支持360度旋转查看模型
 
 ### 如何访问此页面
-目前 `DigitalTwinPage` 是一个独立页面，需要通过代码手动导航访问。
-建议：可以从 CompanionView 菜单或 TabView 中添加入口。
+从 **CompanionView** → 左上角菜单 → **Digital Twin**
 
 ### 从 DigitalTwinPage 的跳转方式
 
@@ -288,19 +290,14 @@ Menu {
 |---------|---------|---------|------|
 | AI伴侣 | `CompanionView.swift` | ContentView Tab 1 | ✅ 主页面 |
 | 设置 | `SettingsView.swift` | ContentView Tab 2 / CompanionView 菜单 | ✅ 已集成 |
+| 3D数字孪生 | `DigitalTwinPage.swift` | CompanionView 菜单 | ✅ 已集成 |
+| 3D模型视图 | `HumanModelView.swift` | 被 DigitalTwinPage 使用 | ✅ 已集成 |
 | 医疗仪表板 | `SimpleMedicalDashboardView.swift` | CompanionView 菜单 | ✅ 已集成 |
 | 大脑健康 | `BrainHealthView.swift` | CompanionView 菜单 / DigitalTwinPage | ✅ 已集成 |
 | 心脏健康 | `HeartHealthView.swift` | CompanionView 菜单 / DigitalTwinPage | ✅ 已集成 |
 | 引导页 | `OnboardingView.swift` | 首次启动 | ✅ 已集成 |
 | 主导航容器 | `ContentView.swift` | AppEntryView | ✅ TabView |
 | 应用入口 | `AppEntryView.swift` | LumaApp | ✅ 入口 |
-
-### 独立页面（未集成到主导航）
-
-| 页面名称 | 文件路径 | 功能 | 状态 |
-|---------|---------|------|------|
-| 3D数字孪生 | `DigitalTwinPage.swift` | 3D人体模型交互 | ⚠️ 需添加入口 |
-| 3D模型视图 | `HumanModelView.swift` | 3D模型渲染和交互 | ✅ 被 DigitalTwinPage 使用 |
 
 ### 医疗相关页面（未集成）
 
@@ -311,9 +308,9 @@ Menu {
 | 生物识别数据 | `BiometricDataView.swift` | 详细数据记录 | ⚠️ 未集成 |
 | 行为模式 | `BehavioralPatternsView.swift` | AI行为分析 | ⚠️ 未集成 |
 | 导出分享 | `ExportSharingView.swift` | 数据导出 | ⚠️ 未集成 |
-| 隐私安全 | `PrivacySecurityView.swift` | 隐私设置 | ⚠️ 未集成 |
+| 隐私安全 | `PrivacySecurityView.swift` | 隐私设置 | ✅ 已集成到SettingsView |
 | 完整医疗仪表板 | `MedicalDashboardView.swift` | Charts版本 | ⚠️ 暂未使用 |
-| 用户档案 | `ProfileView.swift` | 个人资料 | ⚠️ 未集成 |
+| 用户档案 | `ProfileView.swift` | 个人资料 | ✅ 已集成到SettingsView |
 
 ### 已删除的页面
 
@@ -367,9 +364,8 @@ Menu {
 
 ## 📊 统计信息
 
-- **已集成页面数量**：8个
-- **独立页面数量**：2个（DigitalTwinPage + HumanModelView）
-- **未集成页面数量**：8个
+- **已集成页面数量**：12个
+- **未集成页面数量**：6个
 - **已删除页面数量**：4个
 - **总计页面数量**：22个文件
 
@@ -383,10 +379,9 @@ Menu {
 
 ## 🚀 建议的下一步
 
-1. **集成 DigitalTwinPage**
-   - 选项A：添加到 CompanionView 左上角菜单
-   - 选项B：作为 ContentView 的第三个 Tab
-   - 选项C：从某个健康页面链接访问
+1. **✅ 已完成：集成 DigitalTwinPage**
+   - 已添加到 CompanionView 左上角菜单
+   - 用户可以通过 "Main Features" → "Digital Twin" 访问
 
 2. **集成其他医疗页面**
    - 可以创建一个"Medical Records"子菜单
