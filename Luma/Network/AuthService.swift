@@ -29,5 +29,11 @@ final class AuthService {
         )
     }
     
-    
+    @MainActor
+    static func logout() {
+        Keychain.delete("luma.jwt.access")
+        Keychain.delete("luma.jwt.refresh")
+        UserDefaults.standard.removeObject(forKey: "cached_user")
+        AppSession.shared.isLoggedIn = false
+    }
 }

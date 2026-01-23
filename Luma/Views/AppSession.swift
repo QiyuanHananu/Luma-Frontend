@@ -10,7 +10,10 @@ import SwiftUI
 
 @MainActor
 final class AppSession: ObservableObject {
-    @Published var isLoggedIn: Bool = false
-}
+    static let shared = AppSession()
 
+    @Published var isLoggedIn: Bool = false
+
+    private init() {}
+}
 

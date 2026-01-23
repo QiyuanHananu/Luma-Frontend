@@ -305,7 +305,7 @@ private struct TermsRow: View {
 }
 
 #Preview {
-    let session = AppSession()
+    let session = AppSession.shared
     session.isLoggedIn = true
 
     return AccountLinkView()

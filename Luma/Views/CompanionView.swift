@@ -1170,6 +1170,6 @@ struct HealthMetricSimple: View {
 
 #Preview {
     CompanionView()
-        .environmentObject(AppSession())
+        .environmentObject(AppSession.shared)
 }
 

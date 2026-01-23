@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct AppEntryView: View {
-    @StateObject private var session = AppSession()
+    @EnvironmentObject var session: AppSession
 
     @State private var hasLaunchedBefore =
         UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+
     @State private var showOnboarding = true
 
     var body: some View {
@@ -22,11 +23,8 @@ struct AppEntryView: View {
             )
         } else if session.isLoggedIn {
             CompanionView()
-                .environmentObject(session)
         } else {
             AccountLinkView()
-                .environmentObject(session)
         }
     }
 }
-

@@ -19,7 +19,7 @@ struct LumaApp: App {
         }
     var body: some Scene {
         WindowGroup {
-            AppEntryView()
+            AppEntryView().environmentObject(AppSession.shared)
         }
     }
 }

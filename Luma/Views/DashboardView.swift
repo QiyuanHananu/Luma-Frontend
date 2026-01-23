@@ -103,7 +103,13 @@ struct DashboardView: View {
         // 2. 重置 AppSession
         // 3. 回到 AppEntryView
 
+        // ① 先关掉 dashboard sheet
         dismiss()
+
+        // ② 再在下一个 runloop 改 session
+        DispatchQueue.main.async {
+            AuthService.logout()
+        }
     }
 }
 
