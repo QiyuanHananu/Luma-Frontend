@@ -12,3 +12,5 @@ import SwiftUI
 final class AppSession: ObservableObject {
     @Published var isLoggedIn: Bool = false
 }
+
+

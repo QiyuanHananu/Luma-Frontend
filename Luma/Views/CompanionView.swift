@@ -28,6 +28,8 @@ struct CompanionView: View {
     @State private var armWave = false // 手臂摆动
     @State private var showMedicalDashboard = false // 显示医疗仪表板
     @State private var showDigitalTwinView = false
+    @State private var showDashboard = false
+
 
     
     var body: some View {
@@ -51,11 +53,18 @@ struct CompanionView: View {
                 // 底部输入区域（可隐藏）
                 bottomInputArea
                 
+                // dashboard
+                dashboardButtonBottomLeft
+                
                 // 健康快照（可展开）
                 if showHealthSnapshot {
                     healthSnapshotOverlay
                 }
             }
+            .sheet(isPresented: $showDashboard) {
+                    DashboardView()
+                        .presentationDetents([.medium])
+                }
             .navigationDestination(isPresented: $showDigitalTwinView) {
                         DigitalTwinPage()
                     }
@@ -162,6 +171,18 @@ struct CompanionView: View {
                                 .frame(width: 44, height: 44)
                         )
                 }
+                Button(action: {
+                    showDigitalTwinView = true
+                }) {
+                    Image(systemName: "person.crop.circle")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 44, height: 44)
+                        )
+                }
                 
                 Spacer()
                 
@@ -188,18 +209,7 @@ struct CompanionView: View {
                     .accessibilityLabel("医疗仪表板")
                     .accessibilityHint("查看专业医疗数据和分析报告")
                     
-                    Button(action: {
-                        showDigitalTwinView = true
-                    }) {
-                        Image(systemName: "person.crop.circle")
-                            .font(.title2)
-                            .foregroundColor(.blue)
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.9))
-                                    .frame(width: 44, height: 44)
-                            )
-                    }
+                    
 
                     
                     Button(action: {
@@ -220,6 +230,31 @@ struct CompanionView: View {
             .padding(.top, 10)
             
             Spacer()
+        }
+    }
+    
+    private var dashboardButtonBottomLeft: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Button(action: {
+                    showDashboard = true
+                }) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 44, height: 44)
+                        )
+                }
+                .padding(.leading, 16)
+                .padding(.bottom, 20)
+
+                Spacer()
+            }
         }
     }
     
