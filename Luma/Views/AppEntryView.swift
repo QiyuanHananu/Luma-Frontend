@@ -5,21 +5,28 @@
 //  Created by Jiaoyang Liu on 28/8/2025.
 //
 
-
 import SwiftUI
 
 struct AppEntryView: View {
-    @State private var hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+    @StateObject private var session = AppSession()
+
+    @State private var hasLaunchedBefore =
+        UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
     @State private var showOnboarding = true
 
     var body: some View {
-            if hasLaunchedBefore {
-                CompanionView()
-            } else {
-                OnboardingView(
-                    showOnboarding: $showOnboarding,
-                    hasLaunchedBefore: $hasLaunchedBefore
-                )
-            }
+        if !hasLaunchedBefore {
+            OnboardingView(
+                showOnboarding: $showOnboarding,
+                hasLaunchedBefore: $hasLaunchedBefore
+            )
+        } else if session.isLoggedIn {
+            CompanionView()
+                .environmentObject(session)
+        } else {
+            AccountLinkView()
+                .environmentObject(session)
         }
+    }
 }
+

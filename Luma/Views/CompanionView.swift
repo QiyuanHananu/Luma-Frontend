@@ -27,9 +27,11 @@ struct CompanionView: View {
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
     @State private var showMedicalDashboard = false // 显示医疗仪表板
+    @State private var showDigitalTwinView = false
+
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 背景渐变
                 backgroundGradient
@@ -54,6 +56,9 @@ struct CompanionView: View {
                     healthSnapshotOverlay
                 }
             }
+            .navigationDestination(isPresented: $showDigitalTwinView) {
+                        DigitalTwinPage()
+                    }
             .navigationTitle("")
             .navigationBarHidden(true)
             .onTapGesture {
@@ -182,6 +187,20 @@ struct CompanionView: View {
                     }
                     .accessibilityLabel("医疗仪表板")
                     .accessibilityHint("查看专业医疗数据和分析报告")
+                    
+                    Button(action: {
+                        showDigitalTwinView = true
+                    }) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
+
                     
                     Button(action: {
                         // 紧急求助
@@ -975,7 +994,10 @@ struct CompanionView: View {
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
+    
+    
 }
+
 
 // MARK: - Luma情绪枚举
 enum LumaEmotion: CaseIterable {
@@ -1113,4 +1135,6 @@ struct HealthMetricSimple: View {
 
 #Preview {
     CompanionView()
+        .environmentObject(AppSession())
 }
+

@@ -8,21 +8,33 @@
 
 import SwiftUI
 import AuthenticationServices
+import Security
 
+// MARK: - Config
+private let APIBaseURL = "http://127.0.0.1:8001" // TODO: 改成你的后端地址
+
+// MARK: - View
 struct AccountLinkView: View {
+    @EnvironmentObject private var session: AppSession
+    @StateObject private var vm = AuthViewModel()
+
+    @State private var showUsernameSheet = false
+
     var body: some View {
         VStack(spacing: 24) {
 
-            // MARK: Header
             HeaderSection()
 
-            // MARK: Buttons
             VStack(spacing: 14) {
+                // Apple 登录：先留接口（真正接入要把 identityToken 发给后端换你自己的 JWT）
                 SignInWithAppleButton(.signIn,
                                       onRequest: { req in
                                           req.requestedScopes = [.fullName, .email]
                                       },
-                                      onCompletion: { _ in })
+                                      onCompletion: { result in
+                                          // TODO: 把 Apple credential 的 identityToken 发给后端换 JWT
+                                          // vm.signInWithApple(result)
+                                      })
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 48)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -30,40 +42,210 @@ struct AccountLinkView: View {
                 CenteredSocialButton(title: "Continue with Google",
                                      icon: "globe",
                                      tint: .green) {
-                    // TODO: Google sign-in
+                    // TODO: Google sign-in（同理：拿到 Google idToken 发给后端换 JWT）
                 }
 
-                CenteredSocialButton(title: "Continue with Email",
-                                     icon: "envelope.fill",
+                CenteredSocialButton(title: "Continue with Username",
+                                     icon: "person.fill",
                                      tint: .blue) {
-                    // TODO: Email sign-in
-                }
-
-                CenteredSocialButton(title: "Continue as Guest",
-                                     icon: "person.crop.circle.badge.questionmark",
-                                     tint: .gray) {
-                    // TODO: Guest flow
+                    showUsernameSheet = true
                 }
             }
             .padding(.horizontal, 20)
 
-            // MARK: Terms
             TermsRow()
                 .padding(.top, 6)
 
+            // 状态展示（方便你调试）
+            if vm.isLoading {
+                ProgressView("Signing in...")
+                    .padding(.top, 8)
+            }
+
+            if let err = vm.errorMessage {
+                Text(err)
+                    .foregroundStyle(.red)
+                    .font(.footnote)
+                    .padding(.horizontal, 20)
+            }
+
+            if let me = vm.me {
+                Text("✅ Logged in as \(me.username)")
+                    .font(.footnote)
+                    .padding(.top, 8)
+                    .onAppear {
+                                session.isLoggedIn = true
+                            }
+            }
+
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) // 顶部对齐关键
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, 24)
         .background(Color(.systemBackground))
+        .sheet(isPresented: $showUsernameSheet) {
+            UserLoginSheet(
+                isPresented: $showUsernameSheet,
+                onLogin: { username, password in
+                    Task { await vm.loginWithUsername(username: username, password: password) }
+                }
+            )
+            .presentationDetents([.medium])
+        }
     }
 }
 
-// MARK: - Header
+// MARK: - Username Login Sheet
+private struct UserLoginSheet: View {
+    @Binding var isPresented: Bool
+    let onLogin: (String, String) -> Void
+
+    @State private var username = ""
+    @State private var password = ""
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("Account") {
+                    TextField("Username", text: $username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    SecureField("Password", text: $password)
+                }
+
+                Section {
+                    Button("Sign In") {
+                        onLogin(username, password)
+                    }
+                    .disabled(username.isEmpty || password.isEmpty)
+                }
+            }
+            .navigationTitle("Sign in with Username")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Close") { isPresented = false }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - ViewModel
+@MainActor
+final class AuthViewModel: ObservableObject {
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var me: MeResponse?
+
+    func loginWithUsername(username: String, password: String) async {
+        errorMessage = nil
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // 1) 登录拿 JWT
+            let tokens = try await AuthAPI.login(username: username, password: password)
+
+            // 2) 保存 token 到 Keychain（App 重启也还在）
+            Keychain.save(tokens.access, for: "luma.jwt.access")
+            Keychain.save(tokens.refresh, for: "luma.jwt.refresh")
+
+            // 3) 立刻打 /api/me 验证 token 是否可用
+            let meResp = try await AuthAPI.me(accessToken: tokens.access)
+            self.me = meResp
+        } catch {
+            self.errorMessage = "Login failed: \(error.localizedDescription)"
+        }
+    }
+}
+
+// MARK: - API Layer
+enum AuthAPI {
+    struct Tokens: Decodable {
+        let refresh: String
+        let access: String
+    }
+
+    static func login(username: String, password: String) async throws -> Tokens {
+        let url = URL(string: "\(APIBaseURL)/api/auth/login/")!
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body = ["username": username, "password": password]
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        try validateHTTP(resp, data: data)
+        return try JSONDecoder().decode(Tokens.self, from: data)
+    }
+
+    static func me(accessToken: String) async throws -> MeResponse {
+        let url = URL(string: "\(APIBaseURL)/api/me")!
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        try validateHTTP(resp, data: data)
+        return try JSONDecoder().decode(MeResponse.self, from: data)
+    }
+
+    private static func validateHTTP(_ resp: URLResponse, data: Data) throws {
+        guard let http = resp as? HTTPURLResponse else { return }
+        guard (200...299).contains(http.statusCode) else {
+            let msg = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
+            throw NSError(domain: "HTTP", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
+    }
+}
+
+
+// MARK: - Keychain helper
+enum Keychain {
+    static func save(_ value: String, for key: String) {
+        let data = Data(value.utf8)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(query as CFDictionary)
+
+        let add: [String: Any] = query.merging([
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+        ]) { $1 }
+
+        SecItemAdd(add as CFDictionary, nil)
+    }
+
+    static func read(_ key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess, let data = item as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func delete(_ key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+}
+
+// MARK: - Header / Buttons / Terms (你原来的不动)
 private struct HeaderSection: View {
     var body: some View {
         VStack(spacing: 10) {
-            // 没有资源时用 SF Symbol 占位
             Spacer(minLength: 0)
             Image(systemName: "stethoscope.circle.fill")
                 .font(.system(size: 56))
@@ -78,12 +260,11 @@ private struct HeaderSection: View {
 
             Text("Choose how you’d like to sign in")
                 .font(.subheadline)
-                .foregroundStyle(.ultraThinMaterial)
+                .foregroundStyle(.secondary)
         }
     }
 }
 
-// MARK: - Centered social button (与 Apple 按钮同风格，内容居中)
 private struct CenteredSocialButton: View {
     let title: String
     let icon: String
@@ -112,7 +293,6 @@ private struct CenteredSocialButton: View {
     }
 }
 
-// MARK: - Terms
 private struct TermsRow: View {
     var body: some View {
         Text("By continuing, you agree to our ")
@@ -124,6 +304,11 @@ private struct TermsRow: View {
     }
 }
 
-#Preview{
-    AccountLinkView()
+#Preview {
+    let session = AppSession()
+    session.isLoggedIn = true
+
+    return AccountLinkView()
+        .environmentObject(session)
 }
+
