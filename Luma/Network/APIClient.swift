@@ -28,8 +28,7 @@ final class APIClient {
     static let shared = APIClient()
     private init() {}
 
-    // ✅ 你的后端端口：8001
-    private let baseURL = "http://127.0.0.1:8001"
+    private let baseURL = "http://192.168.1.2:8001"
 
     func request<T: Decodable>(
         path: String,
@@ -39,6 +38,8 @@ final class APIClient {
     ) async throws -> T {
 
         guard let url = URL(string: baseURL + path) else { throw APIError.invalidURL }
+        print("🌐 Request URL:", url.absoluteString)
+        
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")

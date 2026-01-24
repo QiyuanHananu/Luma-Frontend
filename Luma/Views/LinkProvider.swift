@@ -11,7 +11,7 @@ import AuthenticationServices
 import Security
 
 // MARK: - Config
-private let APIBaseURL = "http://127.0.0.1:8001" // TODO: 改成你的后端地址
+private let APIBaseURL = "http://192.168.1.2:8001" // TODO: 改成你的后端地址
 
 // MARK: - View
 struct AccountLinkView: View {
@@ -152,7 +152,7 @@ final class AuthViewModel: ObservableObject {
             Keychain.save(tokens.refresh, for: "luma.jwt.refresh")
 
             // 3) 立刻打 /api/me 验证 token 是否可用
-            let meResp = try await AuthAPI.me(accessToken: tokens.access)
+            let meResp = try await AuthAPI.me()
             self.me = meResp
         } catch {
             self.errorMessage = "Login failed: \(error.localizedDescription)"
@@ -168,36 +168,22 @@ enum AuthAPI {
     }
 
     static func login(username: String, password: String) async throws -> Tokens {
-        let url = URL(string: "\(APIBaseURL)/api/auth/login/")!
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let req = LoginRequest(username: username, password: password)
 
-        let body = ["username": username, "password": password]
-        req.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        try validateHTTP(resp, data: data)
-        return try JSONDecoder().decode(Tokens.self, from: data)
+        return try await APIClient.shared.request(
+            path: "/api/auth/login/",
+            method: "POST",
+            body: req,
+            requiresAuth: false
+        )
     }
 
-    static func me(accessToken: String) async throws -> MeResponse {
-        let url = URL(string: "\(APIBaseURL)/api/me")!
-        var req = URLRequest(url: url)
-        req.httpMethod = "GET"
-        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        try validateHTTP(resp, data: data)
-        return try JSONDecoder().decode(MeResponse.self, from: data)
-    }
-
-    private static func validateHTTP(_ resp: URLResponse, data: Data) throws {
-        guard let http = resp as? HTTPURLResponse else { return }
-        guard (200...299).contains(http.statusCode) else {
-            let msg = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
-            throw NSError(domain: "HTTP", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
-        }
+    static func me() async throws -> MeResponse {
+        return try await APIClient.shared.request(
+            path: "/api/me",
+            method: "GET",
+            requiresAuth: true
+        )
     }
 }
 

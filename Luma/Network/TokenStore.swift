@@ -8,30 +8,28 @@
 
 import Foundation
 
-final class TokenStore {
+final class TokenStore: ObservableObject {
     static let shared = TokenStore()
-    private init() {}
 
-    private let accessKey = "jwt_access"
-    private let refreshKey = "jwt_refresh"
+    @Published private(set) var accessToken: String?
+    @Published private(set) var refreshToken: String?
 
-    var accessToken: String? {
-        get { UserDefaults.standard.string(forKey: accessKey) }
-        set { UserDefaults.standard.setValue(newValue, forKey: accessKey) }
-    }
-
-    var refreshToken: String? {
-        get { UserDefaults.standard.string(forKey: refreshKey) }
-        set { UserDefaults.standard.setValue(newValue, forKey: refreshKey) }
+    private init() {
+        accessToken = Keychain.read("luma.jwt.access")
+        refreshToken = Keychain.read("luma.jwt.refresh")
     }
 
     func save(access: String, refresh: String) {
         accessToken = access
         refreshToken = refresh
+        Keychain.save(access, for: "luma.jwt.access")
+        Keychain.save(refresh, for: "luma.jwt.refresh")
     }
 
     func clear() {
         accessToken = nil
         refreshToken = nil
+        Keychain.delete("luma.jwt.access")
+        Keychain.delete("luma.jwt.refresh")
     }
 }
