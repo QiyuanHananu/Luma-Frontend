@@ -111,6 +111,9 @@ struct CompanionView: View {
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
         }
+        .onAppear {
+            conversations = StorageManager.shared.loadCurrentSession()
+        }
     }
     
     // MARK: - 全屏Luma角色

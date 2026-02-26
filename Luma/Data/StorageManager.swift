@@ -48,4 +48,17 @@ final class StorageManager {
         try? FileManager.default.createDirectory(at: sessions, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: summaries, withIntermediateDirectories: true)
     }
+    
+    func loadCurrentSession() -> [Conversation] {
+        let sessionURL = baseURL
+            .appendingPathComponent("sessions")
+            .appendingPathComponent("current_session.json")
+        
+        guard let data = try? Data(contentsOf: sessionURL),
+              let decoded = try? JSONDecoder().decode([Conversation].self, from: data) else {
+            return []
+        }
+        
+        return decoded
+    }
 }
