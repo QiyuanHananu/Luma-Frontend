@@ -434,9 +434,9 @@ struct CompanionView: View {
         
         withAnimation {
             conversations.append(userMessage)
-            StorageManager.shared.saveMessage(userMessage)
             showConversationBubble = false
         }
+        StorageManager.shared.saveMessage(userMessage)
         userInput = ""
         
         // 隐藏输入区域

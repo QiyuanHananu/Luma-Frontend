@@ -28,7 +28,7 @@ final class APIClient {
     static let shared = APIClient()
     private init() {}
 
-    private let baseURL = "http://192.168.1.2:8001"
+    private let baseURL = "http://127.0.0.1:8001"
 
     func request<T: Decodable>(
         path: String,

@@ -32,7 +32,9 @@ final class StorageManager {
         
         if let encoded = try? JSONEncoder().encode(existing) {
             try? encoded.write(to: sessionURL)
+            print("📂 Session file path:", sessionURL.path)
         }
+        print("💾 Saved message:", message.message)
     }
 
     private init() {
