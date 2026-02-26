@@ -16,14 +16,26 @@ import Foundation
 // MARK: - 基础数据模型
 
 /// 对话消息
-struct Conversation: Identifiable {
-    let id = UUID()
+struct Conversation: Identifiable, Codable {
+    let id: UUID
     let message: String
     let isFromUser: Bool
     let timestamp: Date
     
     var formattedTime: String {
         timestamp.formatted(.dateTime.hour().minute())
+    }
+    
+    init(
+        id: UUID = UUID(),
+        message: String,
+        isFromUser: Bool,
+        timestamp: Date
+    ) {
+        self.id = id
+        self.message = message
+        self.isFromUser = isFromUser
+        self.timestamp = timestamp
     }
 }
 

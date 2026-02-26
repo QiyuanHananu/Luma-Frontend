@@ -431,6 +431,7 @@ struct CompanionView: View {
         
         withAnimation {
             conversations.append(userMessage)
+            StorageManager.shared.saveMessage(userMessage)
             showConversationBubble = false
         }
         userInput = ""
@@ -475,6 +476,7 @@ struct CompanionView: View {
             withAnimation(.spring()) {
                 conversations.append(aiReply)
                 // 不再强制切换到happy，保持用户触发的情绪
+                StorageManager.shared.saveMessage(aiReply)
                 showConversationBubble = false
             }
             
