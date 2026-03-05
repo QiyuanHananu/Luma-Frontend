@@ -201,7 +201,7 @@ struct CompanionView: View {
                         )
                 }
                 
-                Button("Test Summary") {
+                Button("Summary") {
                     let summary = generateMockSummary()
                     print(summary)
                 }
