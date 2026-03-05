@@ -15,7 +15,7 @@ struct DashboardView: View {
 
 
     // TODO: 后续可从 AppSession / AuthViewModel 读
-    let username: String = "admin_lainey"
+    let username: String = "admin_luma"
     let loginMethod: String = "Username"
 
     var body: some View {
