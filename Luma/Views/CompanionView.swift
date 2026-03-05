@@ -29,6 +29,32 @@ struct CompanionView: View {
     @State private var showMedicalDashboard = false // 显示医疗仪表板
     @State private var showDigitalTwinView = false
     @State private var showDashboard = false
+    
+    
+    private func generateMockSummary() -> MentalHealthSummary {
+        
+        guard let first = conversations.first,
+              let last = conversations.last else {
+            
+            return MentalHealthSummary(
+                periodStart: Date(),
+                periodEnd: Date(),
+                moodScore: 5,
+                dominantEmotions: ["neutral"],
+                riskLevel: "low",
+                notes: "No conversation data available."
+            )
+        }
+        
+        return MentalHealthSummary(
+            periodStart: first.timestamp,
+            periodEnd: last.timestamp,
+            moodScore: 4,
+            dominantEmotions: ["curious"],
+            riskLevel: "low",
+            notes: "User appears stable during this conversation period."
+        )
+    }
 
 
     
@@ -174,6 +200,12 @@ struct CompanionView: View {
                                 .frame(width: 44, height: 44)
                         )
                 }
+                
+                Button("Test Summary") {
+                    let summary = generateMockSummary()
+                    print(summary)
+                }
+                
                 Button(action: {
                     showDigitalTwinView = true
                 }) {
