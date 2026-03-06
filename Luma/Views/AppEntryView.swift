@@ -14,23 +14,23 @@
 import SwiftUI
 
 struct AppEntryView: View {
-    @State private var hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+    @EnvironmentObject var session: AppSession
+
+    @State private var hasLaunchedBefore =
+        UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+
     @State private var showOnboarding = true
 
     var body: some View {
-        if hasLaunchedBefore {
-            // 主页面：CompanionView（带左上角菜单导航）
-            CompanionView()
-        } else {
-            // 首次启动：引导页
+        if !hasLaunchedBefore {
             OnboardingView(
                 showOnboarding: $showOnboarding,
                 hasLaunchedBefore: $hasLaunchedBefore
             )
+        } else if session.isLoggedIn {
+            CompanionView()
+        } else {
+            AccountLinkView()
         }
     }
-}
-
-#Preview {
-    AppEntryView()
 }

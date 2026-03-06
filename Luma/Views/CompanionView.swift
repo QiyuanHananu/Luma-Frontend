@@ -26,17 +26,40 @@ struct CompanionView: View {
     @State private var isDozing = false
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
-    @State private var showMenu = false // 显示菜单
+    @State private var showMedicalDashboard = false // 显示医疗仪表板
+    @State private var showDigitalTwinView = false
+    @State private var showDashboard = false
     
-    // 导航状态
-    @State private var showSettings = false
-    @State private var showMedicalDashboard = false
-    @State private var showBrainHealth = false
-    @State private var showHeartHealth = false
-    @State private var showDigitalTwin = false
+    
+    private func generateMockSummary() -> MentalHealthSummary {
+        
+        guard let first = conversations.first,
+              let last = conversations.last else {
+            
+            return MentalHealthSummary(
+                periodStart: Date(),
+                periodEnd: Date(),
+                moodScore: 5,
+                dominantEmotions: ["neutral"],
+                riskLevel: "low",
+                notes: "No conversation data available."
+            )
+        }
+        
+        return MentalHealthSummary(
+            periodStart: first.timestamp,
+            periodEnd: last.timestamp,
+            moodScore: 4,
+            dominantEmotions: ["curious"],
+            riskLevel: "low",
+            notes: "User appears stable during this conversation period."
+        )
+    }
+
+
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 背景渐变
                 backgroundGradient
@@ -56,11 +79,21 @@ struct CompanionView: View {
                 // 底部输入区域（可隐藏）
                 bottomInputArea
                 
+                // dashboard
+                dashboardButtonBottomLeft
+                
                 // 健康快照（可展开）
                 if showHealthSnapshot {
                     healthSnapshotOverlay
                 }
             }
+            .sheet(isPresented: $showDashboard) {
+                    DashboardView()
+                        .presentationDetents([.medium])
+                }
+            .navigationDestination(isPresented: $showDigitalTwinView) {
+                        DigitalTwinPage()
+                    }
             .navigationTitle("")
             .navigationBarHidden(true)
             .onTapGesture {
@@ -110,11 +143,8 @@ struct CompanionView: View {
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
         }
-        .sheet(isPresented: $showBrainHealth) {
-            BrainHealthView()
-        }
-        .sheet(isPresented: $showHeartHealth) {
-            HeartHealthView()
+        .onAppear {
+            conversations = StorageManager.shared.loadCurrentSession()
         }
     }
     
@@ -211,6 +241,24 @@ struct CompanionView: View {
                         )
                 }
                 
+                Button("Summary") {
+                    let summary = generateMockSummary()
+                    print(summary)
+                }
+                
+                Button(action: {
+                    showDigitalTwinView = true
+                }) {
+                    Image(systemName: "person.crop.circle")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 44, height: 44)
+                        )
+                }
+                
                 Spacer()
                 
                 Text("Luma")
@@ -220,14 +268,68 @@ struct CompanionView: View {
                 
                 Spacer()
                 
-                // 右侧占位，保持标题居中
-                Color.clear
-                    .frame(width: 44, height: 44)
+                HStack(spacing: 12) {
+                    Button(action: {
+                        showMedicalDashboard = true
+                    }) {
+                        Image(systemName: "stethoscope.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
+                    .accessibilityLabel("医疗仪表板")
+                    .accessibilityHint("查看专业医疗数据和分析报告")
+                    
+                    
+
+                    
+                    Button(action: {
+                        // 紧急求助
+                    }) {
+                        Image(systemName: "phone.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.red)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.9))
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
             
             Spacer()
+        }
+    }
+    
+    private var dashboardButtonBottomLeft: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Button(action: {
+                    showDashboard = true
+                }) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 44, height: 44)
+                        )
+                }
+                .padding(.leading, 16)
+                .padding(.bottom, 20)
+
+                Spacer()
+            }
         }
     }
     
@@ -406,6 +508,7 @@ struct CompanionView: View {
             conversations.append(userMessage)
             showConversationBubble = false
         }
+        StorageManager.shared.saveMessage(userMessage)
         userInput = ""
         
         // 隐藏输入区域
@@ -448,6 +551,7 @@ struct CompanionView: View {
             withAnimation(.spring()) {
                 conversations.append(aiReply)
                 // 不再强制切换到happy，保持用户触发的情绪
+                StorageManager.shared.saveMessage(aiReply)
                 showConversationBubble = false
             }
             
@@ -1002,7 +1106,10 @@ struct CompanionView: View {
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
+    
+    
 }
+
 
 // MARK: - Luma情绪枚举
 enum LumaEmotion: CaseIterable {
@@ -1140,4 +1247,6 @@ struct HealthMetricSimple: View {
 
 #Preview {
     CompanionView()
+        .environmentObject(AppSession.shared)
 }
+
