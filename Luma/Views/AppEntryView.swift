@@ -2,7 +2,13 @@
 //  AppEntryView.swift
 //  Luma
 //
+//  功能说明：
+//  - 应用入口，判断是否首次启动
+//  - 首次启动显示 OnboardingView
+//  - 之后直接进入 CompanionView（主页面）
+//
 //  Created by Jiaoyang Liu on 28/8/2025.
+//  Updated by Han on 9/10/2025.
 //
 
 import SwiftUI

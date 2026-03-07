@@ -10,6 +10,8 @@ import SwiftUI
 
 struct DigitalTwinPage: View {
     @State private var navigateToHeartRate = false
+    @State private var navigateToBrainHealth = false
+    @State private var navigateToHeartHealth = false
     
     var body: some View {
         ZStack {
@@ -26,9 +28,13 @@ struct DigitalTwinPage: View {
                 Divider().padding(.horizontal, 40)
                 
                 // human base
-                HumanModelView(navigateToHeartRate: $navigateToHeartRate)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.clear)
+                HumanModelView(
+                    navigateToHeartRate: $navigateToHeartRate,
+                    navigateToBrainHealth: $navigateToBrainHealth,
+                    navigateToHeartHealth: $navigateToHeartHealth
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.clear)
                 
                 // hint
                 Text("Tap a body area to see insights")
@@ -36,6 +42,12 @@ struct DigitalTwinPage: View {
                     .foregroundColor(.secondary)
                     .padding(.bottom, 20)
             }
+        }
+        .sheet(isPresented: $navigateToBrainHealth) {
+            BrainHealthView()
+        }
+        .sheet(isPresented: $navigateToHeartHealth) {
+            HeartHealthView()
         }
     }
 }

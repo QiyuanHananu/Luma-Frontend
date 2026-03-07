@@ -134,6 +134,12 @@ struct CompanionView: View {
                 }
             }
         }
+        .sheet(isPresented: $showDigitalTwin) {
+            DigitalTwinPage()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
         }
@@ -186,18 +192,52 @@ struct CompanionView: View {
     private var topControls: some View {
         VStack {
             HStack {
-                Button(action: {
-                    withAnimation {
-                        showHealthSnapshot.toggle()
+                // 左上角菜单按钮
+                Menu {
+                    // 主要功能
+                    Section("Main Features") {
+                        Button(action: { showDigitalTwin = true }) {
+                            Label("Digital Twin", systemImage: "figure.stand")
+                        }
                     }
-                }) {
-                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                    
+                    // 健康数据
+                    Section("Health Data") {
+                        Button(action: { showMedicalDashboard = true }) {
+                            Label("Medical Dashboard", systemImage: "stethoscope.circle.fill")
+                        }
+                        
+                        Button(action: { showBrainHealth = true }) {
+                            Label("Brain Health", systemImage: "brain.head.profile")
+                        }
+                        
+                        Button(action: { showHeartHealth = true }) {
+                            Label("Heart Health", systemImage: "heart.fill")
+                        }
+                    }
+                    
+                    // 其他功能
+                    Section("More") {
+                        Button(action: { 
+                            withAnimation {
+                                showHealthSnapshot.toggle()
+                            }
+                        }) {
+                            Label("Health Snapshot", systemImage: "chart.line.uptrend.xyaxis")
+                        }
+                        
+                        Button(action: { showSettings = true }) {
+                            Label("Settings", systemImage: "gear")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal")
                         .font(.title2)
                         .foregroundColor(.blue)
+                        .frame(width: 44, height: 44)
                         .background(
                             Circle()
                                 .fill(Color.white.opacity(0.9))
-                                .frame(width: 44, height: 44)
                         )
                 }
                 

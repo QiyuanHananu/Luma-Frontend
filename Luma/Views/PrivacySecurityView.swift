@@ -8,7 +8,7 @@
 import SwiftUI
 import LocalAuthentication
 
-// MARK: - 隐私安全数据模型
+// MARK: - Privacy Security Data Models
 struct SecuritySetting {
     let id = UUID()
     let title: String
@@ -96,7 +96,7 @@ enum AuditResult: String {
     }
 }
 
-// MARK: - 隐私安全控制视图
+// MARK: - Privacy Security Control View
 struct PrivacySecurityView: View {
     @State private var selectedTab = 0
     @State private var securitySettings: [SecuritySetting] = []
@@ -157,7 +157,7 @@ struct PrivacySecurityView: View {
                 
                 Spacer()
                 
-                // HIPAA合规标识
+                // HIPAA Compliance Badge
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.seal.fill")
                         .foregroundColor(.blue)
@@ -208,15 +208,15 @@ struct PrivacySecurityView: View {
     
     private var tabSelector: some View {
         HStack(spacing: 0) {
-            TabSelectorButton(title: "安全设置", isSelected: selectedTab == 0) {
+            TabSelectorButton(title: "Security Settings", isSelected: selectedTab == 0) {
                 selectedTab = 0
             }
             
-            TabSelectorButton(title: "数据保留", isSelected: selectedTab == 1) {
+            TabSelectorButton(title: "Data Retention", isSelected: selectedTab == 1) {
                 selectedTab = 1
             }
             
-            TabSelectorButton(title: "审计日志", isSelected: selectedTab == 2) {
+            TabSelectorButton(title: "Audit Logs", isSelected: selectedTab == 2) {
                 selectedTab = 2
             }
         }
@@ -288,23 +288,23 @@ struct PrivacySecurityView: View {
     }
     
     private var authenticationSettings: some View {
-        SecurityCategoryCard(title: "身份验证", icon: "faceid", color: .blue) {
+        SecurityCategoryCard(title: "Authentication", icon: "faceid", color: .blue) {
             VStack(spacing: 12) {
                 SecurityToggle(
-                    title: "生物识别登录",
-                    description: "使用Face ID或Touch ID快速安全登录",
+                    title: "Biometric Login",
+                    description: "Use Face ID or Touch ID for quick and secure login",
                     isOn: $biometricEnabled,
                     icon: "faceid"
                 )
                 
                 SecurityToggle(
-                    title: "自动锁定",
-                    description: "应用闲置5分钟后自动锁定",
+                    title: "Auto Lock",
+                    description: "Automatically lock the app after 5 minutes of inactivity",
                     isOn: $autoLockEnabled,
                     icon: "lock.fill"
                 )
                 
-                Button("设置生物识别") {
+                Button("Setup Biometric") {
                     showBiometricSetup = true
                 }
                 .font(.subheadline)
@@ -315,11 +315,11 @@ struct PrivacySecurityView: View {
     }
     
     private var encryptionSettings: some View {
-        SecurityCategoryCard(title: "数据加密", icon: "lock.shield.fill", color: .green) {
+        SecurityCategoryCard(title: "Data Encryption", icon: "lock.shield.fill", color: .green) {
             VStack(spacing: 12) {
                 SecurityToggle(
-                    title: "端到端加密",
-                    description: "所有数据传输使用AES-256加密",
+                    title: "End-to-End Encryption",
+                    description: "All data transmission uses AES-256 encryption",
                     isOn: $encryptionEnabled,
                     icon: "lock.shield.fill"
                 )
@@ -328,7 +328,7 @@ struct PrivacySecurityView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
                     
-                    Text("本地数据已加密存储")
+                    Text("Local data is encrypted and stored")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
@@ -339,7 +339,7 @@ struct PrivacySecurityView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
                     
-                    Text("云端备份使用零知识加密")
+                    Text("Cloud backup uses zero-knowledge encryption")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
@@ -350,40 +350,40 @@ struct PrivacySecurityView: View {
     }
     
     private var accessControlSettings: some View {
-        SecurityCategoryCard(title: "访问控制", icon: "key.fill", color: .orange) {
+        SecurityCategoryCard(title: "Access Control", icon: "key.fill", color: .orange) {
             VStack(spacing: 12) {
                 HStack {
-                    Text("细粒度权限控制")
+                    Text("Fine-grained Permission Control")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("已启用")
+                    Text("Enabled")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
                 
                 HStack {
-                    Text("可撤销访问权限")
+                    Text("Revocable Access Permissions")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("已启用")
+                    Text("Enabled")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
                 
                 HStack {
-                    Text("访问时间限制")
+                    Text("Access Time Limits")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("已启用")
+                    Text("Enabled")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
@@ -392,40 +392,40 @@ struct PrivacySecurityView: View {
     }
     
     private var privacyProtectionSettings: some View {
-        SecurityCategoryCard(title: "隐私保护", icon: "eye.slash.fill", color: .red) {
+        SecurityCategoryCard(title: "Privacy Protection", icon: "eye.slash.fill", color: .red) {
             VStack(spacing: 12) {
                 HStack {
-                    Text("数据匿名化")
+                    Text("Data Anonymization")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("自动")
+                    Text("Automatic")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
                 
                 HStack {
-                    Text("最小化数据收集")
+                    Text("Minimize Data Collection")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("已启用")
+                    Text("Enabled")
                         .font(.caption)
                         .foregroundColor(.green)
                 }
                 
                 HStack {
-                    Text("第三方数据共享")
+                    Text("Third-party Data Sharing")
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
                     Spacer()
                     
-                    Text("已禁用")
+                    Text("Disabled")
                         .font(.caption)
                         .foregroundColor(.red)
                 }
@@ -440,12 +440,12 @@ struct PrivacySecurityView: View {
                     .foregroundColor(.blue)
                     .font(.title2)
                 
-                Text("数据保留控制")
+                Text("Data Retention Control")
                     .font(.headline)
                     .fontWeight(.semibold)
             }
             
-            Text("您可以控制不同类型数据的保存时长。过期数据将被自动安全删除，释放存储空间并保护您的隐私。")
+            Text("You can control how long different types of data are stored. Expired data will be automatically and securely deleted to free up storage space and protect your privacy.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -457,7 +457,7 @@ struct PrivacySecurityView: View {
     
     private var dataDeleteionControls: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("数据删除控制")
+            Text("Data Deletion Control")
                 .font(.headline)
                 .fontWeight(.semibold)
             
@@ -467,7 +467,7 @@ struct PrivacySecurityView: View {
                         Image(systemName: "trash.fill")
                             .foregroundColor(.red)
                         
-                        Text("删除所有健康数据")
+                        Text("Delete All Health Data")
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
@@ -489,7 +489,7 @@ struct PrivacySecurityView: View {
                         Image(systemName: "arrow.down.doc.fill")
                             .foregroundColor(.blue)
                         
-                        Text("导出后删除")
+                        Text("Export Then Delete")
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
@@ -520,12 +520,12 @@ struct PrivacySecurityView: View {
                     .foregroundColor(.purple)
                     .font(.title2)
                 
-                Text("访问审计日志")
+                Text("Access Audit Logs")
                     .font(.headline)
                     .fontWeight(.semibold)
             }
             
-            Text("记录所有对您健康数据的访问活动，包括访问时间、用户身份和操作结果。帮助您监控数据安全。")
+            Text("Records all access activities to your health data, including access time, user identity, and operation results. Helps you monitor data security.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -541,11 +541,11 @@ struct PrivacySecurityView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
             
-            Text("暂无审计记录")
+            Text("No Audit Records")
                 .font(.headline)
                 .foregroundColor(.secondary)
             
-            Text("当有访问活动时，记录会显示在这里")
+            Text("Records will appear here when there are access activities")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -557,50 +557,50 @@ struct PrivacySecurityView: View {
     }
     
     private func loadPrivacySecurityData() {
-        // 加载数据保留设置
+        // Load data retention settings
         dataRetentionSettings = [
             DataRetentionSetting(
-                dataType: "健康数据",
+                dataType: "Health Data",
                 retentionPeriod: .twoYears,
-                description: "心率、睡眠、运动等生理数据"
+                description: "Heart rate, sleep, exercise and other physiological data"
             ),
             DataRetentionSetting(
-                dataType: "聊天记录",
+                dataType: "Chat Records",
                 retentionPeriod: .sixMonths,
-                description: "与AI助手的对话历史"
+                description: "Conversation history with AI assistant"
             ),
             DataRetentionSetting(
-                dataType: "情绪日记",
+                dataType: "Mood Diary",
                 retentionPeriod: .oneYear,
-                description: "情绪记录和心理健康数据"
+                description: "Mood records and mental health data"
             ),
             DataRetentionSetting(
-                dataType: "使用日志",
+                dataType: "Usage Logs",
                 retentionPeriod: .threeMonths,
-                description: "应用使用统计和行为数据"
+                description: "App usage statistics and behavioral data"
             )
         ]
         
-        // 加载审计日志（模拟数据）
+        // Load audit logs (mock data)
         auditLogs = [
             AuditLogEntry(
                 timestamp: Calendar.current.date(byAdding: .hour, value: -2, to: Date()) ?? Date(),
-                action: "查看健康数据",
-                user: "张医生",
+                action: "View Health Data",
+                user: "Dr. Zhang",
                 ipAddress: "192.168.1.100",
                 result: .success
             ),
             AuditLogEntry(
                 timestamp: Calendar.current.date(byAdding: .hour, value: -6, to: Date()) ?? Date(),
-                action: "导出数据",
-                user: "用户本人",
+                action: "Export Data",
+                user: "User",
                 ipAddress: "192.168.1.101",
                 result: .success
             ),
             AuditLogEntry(
                 timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
-                action: "尝试访问",
-                user: "未知用户",
+                action: "Attempted Access",
+                user: "Unknown User",
                 ipAddress: "203.0.113.1",
                 result: .blocked
             )
@@ -618,7 +618,7 @@ struct PrivacySecurityView: View {
     }
 }
 
-// MARK: - 支持组件
+// MARK: - Supporting Components
 
 struct SecurityIndicator: View {
     let title: String
@@ -749,11 +749,11 @@ struct DataRetentionCard: View {
                 .foregroundColor(.secondary)
             
             if let days = setting.retentionPeriod.days {
-                Text("数据将在\(days)天后自动删除")
+                Text("Data will be automatically deleted after \(days) days")
                     .font(.caption2)
                     .foregroundColor(.orange)
             } else {
-                Text("数据将永久保存")
+                Text("Data will be permanently stored")
                     .font(.caption2)
                     .foregroundColor(.blue)
             }
@@ -788,7 +788,7 @@ struct AuditLogCard: View {
             }
             
             HStack {
-                Text("用户: \(log.user)")
+                Text("User: \(log.user)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
@@ -813,12 +813,12 @@ struct AuditLogCard: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = Locale(identifier: "en_US")
         return formatter.string(from: date)
     }
 }
 
-// MARK: - 预览
+// MARK: - Preview
 struct PrivacySecurityView_Previews: PreviewProvider {
     static var previews: some View {
         PrivacySecurityView()
