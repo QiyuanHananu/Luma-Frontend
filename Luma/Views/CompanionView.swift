@@ -471,6 +471,27 @@ struct CompanionView: View {
         StorageManager.shared.saveMessage(userMessage)
         userInput = ""
         
+        // invoke AI model
+        Task {
+            do {
+                let reply = try await fetchAIReply(message: userMessage.message)
+
+                let aiMessage = Conversation(
+                    message: reply,
+                    isFromUser: false,
+                    timestamp: Date()
+                )
+
+                await MainActor.run {
+                    conversations.append(aiMessage)
+                    StorageManager.shared.saveMessage(aiMessage)
+                }
+
+            } catch {
+                print("❌ AI error:", error)
+            }
+        }
+        
         // 隐藏输入区域
         withAnimation(.spring()) {
             showInputArea = false
@@ -499,29 +520,6 @@ struct CompanionView: View {
                 showConversationBubble = true
             }
         }
-        
-        // 模拟AI回复
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            let aiReply = Conversation(
-                message: generateEmotionalResponse(),
-                isFromUser: false,
-                timestamp: Date()
-            )
-            
-            withAnimation(.spring()) {
-                conversations.append(aiReply)
-                // 不再强制切换到happy，保持用户触发的情绪
-                StorageManager.shared.saveMessage(aiReply)
-                showConversationBubble = false
-            }
-            
-            // 显示AI回复气泡
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.spring()) {
-                    showConversationBubble = true
-                }
-            }
-        }
     }
     
     private func cycleLumaEmotion() {
@@ -534,17 +532,20 @@ struct CompanionView: View {
         }
     }
     
-    private func generateEmotionalResponse() -> String {
-        switch lumaEmotion {
-        case .happy:
-            return "It's a great pleasure to chat with you! I noticed that you are in a good mood, which is very beneficial to your health. Is there anything you'd like to share?"
-        case .sad:
-            return "I sense that you might be a little unhappy. Although I'm just an AI, I want to say that your feelings are very important. Do we need to have a chat?"
-        case .curious:
-            return "This is very interesting! I want to know more. Could you tell me more details? I will listen carefully."
-        case .tired:
-            return "My battery is a bit low, but I still want to help you. Perhaps we all need to take a break? Proper rest is very important for health."
-        }
+    func fetchAIReply(message: String) async throws -> String {
+
+        let body = [
+            "message": message
+        ]
+
+        let response: AIReplyResponse = try await APIClient.shared.request(
+            path: "/api/chat-with-ai/",
+            method: "POST",
+            body: body,
+            requiresAuth: true
+        )
+
+        return response.reply
     }
     
     private func toggleVoiceInput() {
