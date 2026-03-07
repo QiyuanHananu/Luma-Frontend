@@ -10,9 +10,6 @@ import SwiftUI
 import AuthenticationServices
 import Security
 
-// MARK: - Config
-private let APIBaseURL = "http://192.168.1.2:8001" // TODO: 改成你的后端地址
-
 // MARK: - View
 struct AccountLinkView: View {
     @EnvironmentObject private var session: AppSession
@@ -86,6 +83,7 @@ struct AccountLinkView: View {
         .sheet(isPresented: $showUsernameSheet) {
             UserLoginSheet(
                 isPresented: $showUsernameSheet,
+                vm: vm,
                 onLogin: { username, password in
                     Task { await vm.loginWithUsername(username: username, password: password) }
                 }
@@ -98,6 +96,7 @@ struct AccountLinkView: View {
 // MARK: - Username Login Sheet
 private struct UserLoginSheet: View {
     @Binding var isPresented: Bool
+    @ObservedObject var vm: AuthViewModel
     let onLogin: (String, String) -> Void
 
     @State private var username = ""
@@ -118,7 +117,18 @@ private struct UserLoginSheet: View {
                     Button("Sign In") {
                         onLogin(username, password)
                     }
-                    .disabled(username.isEmpty || password.isEmpty)
+                    .disabled(username.isEmpty || password.isEmpty || vm.isLoading)
+
+                    if vm.isLoading {
+                        ProgressView("Signing in...")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    if let err = vm.errorMessage {
+                        Text(err)
+                            .foregroundStyle(.red)
+                            .font(.footnote)
+                    }
                 }
             }
             .navigationTitle("Sign in with Username")
@@ -141,6 +151,7 @@ final class AuthViewModel: ObservableObject {
     func loginWithUsername(username: String, password: String) async {
         errorMessage = nil
         isLoading = true
+        print("🔐 Start login for user:", username)
         defer { isLoading = false }
 
         do {
@@ -154,7 +165,9 @@ final class AuthViewModel: ObservableObject {
             // 3) 立刻打 /api/me 验证 token 是否可用
             let meResp = try await AuthAPI.me()
             self.me = meResp
+            print("✅ Login success:", meResp.username)
         } catch {
+            print("❌ Login failed:", error.localizedDescription)
             self.errorMessage = "Login failed: \(error.localizedDescription)"
         }
     }

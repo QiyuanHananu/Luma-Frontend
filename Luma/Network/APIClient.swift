@@ -28,7 +28,7 @@ final class APIClient {
     static let shared = APIClient()
     private init() {}
 
-    private let baseURL = "http://127.0.0.1:8001"
+    private let baseURL = APIConfig.baseURL
 
     func request<T: Decodable>(
         path: String,
@@ -39,9 +39,11 @@ final class APIClient {
 
         guard let url = URL(string: baseURL + path) else { throw APIError.invalidURL }
         print("🌐 Request URL:", url.absoluteString)
+        print("➡️ Request Method:", method)
         
         var req = URLRequest(url: url)
         req.httpMethod = method
+        req.timeoutInterval = 15
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         if requiresAuth {
@@ -53,11 +55,24 @@ final class APIClient {
             req.httpBody = try JSONEncoder().encode(AnyEncodable(body))
         }
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let data: Data
+        let resp: URLResponse
+        do {
+            (data, resp) = try await URLSession.shared.data(for: req)
+        } catch {
+            if let urlError = error as? URLError {
+                print("❌ Network error:", urlError.code.rawValue, urlError.localizedDescription)
+            } else {
+                print("❌ Request failed:", error.localizedDescription)
+            }
+            throw error
+        }
         guard let http = resp as? HTTPURLResponse else { throw APIError.http(-1, "No response") }
+        print("⬅️ Response Status:", http.statusCode)
 
         if !(200...299).contains(http.statusCode) {
             let text = String(data: data, encoding: .utf8) ?? ""
+            print("❌ Response Body:", text)
             throw APIError.http(http.statusCode, text)
         }
 
