@@ -158,9 +158,8 @@ final class AuthViewModel: ObservableObject {
             // 1) 登录拿 JWT
             let tokens = try await AuthAPI.login(username: username, password: password)
 
-            // 2) 保存 token 到 Keychain（App 重启也还在）
-            Keychain.save(tokens.access, for: "luma.jwt.access")
-            Keychain.save(tokens.refresh, for: "luma.jwt.refresh")
+            // 2) 统一通过 TokenStore 保存 token，避免和 APIClient 读取来源不一致
+            TokenStore.shared.save(access: tokens.access, refresh: tokens.refresh)
 
             // 3) 立刻打 /api/me 验证 token 是否可用
             let meResp = try await AuthAPI.me()
@@ -168,8 +167,27 @@ final class AuthViewModel: ObservableObject {
             print("✅ Login success:", meResp.username)
         } catch {
             print("❌ Login failed:", error.localizedDescription)
-            self.errorMessage = "Login failed: \(error.localizedDescription)"
+            self.errorMessage = Self.readableLoginError(from: error)
         }
+    }
+
+    private static func readableLoginError(from error: Error) -> String {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut:
+                return "登录超时：后端服务未及时响应。请检查 API_BASE_URL 是否正确、手机与电脑是否同一网络、后端是否已启动。"
+            case .cannotConnectToHost, .cannotFindHost, .networkConnectionLost, .notConnectedToInternet:
+                return "网络连接失败：无法连接后端。请检查 API_BASE_URL 和本地网络连通性。"
+            default:
+                return "网络错误：\(urlError.localizedDescription)"
+            }
+        }
+
+        if let apiError = error as? APIError {
+            return "登录失败：\(apiError.localizedDescription)"
+        }
+
+        return "登录失败：\(error.localizedDescription)"
     }
 }
 
