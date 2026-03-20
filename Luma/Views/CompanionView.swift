@@ -92,12 +92,12 @@ struct CompanionView: View {
                 }
             }
             .sheet(isPresented: $showDashboard) {
-                    DashboardView()
-                        .presentationDetents([.medium])
-                }
+                DashboardView()
+                    .presentationDetents([.medium])
+            }
             .navigationDestination(isPresented: $showDigitalTwinView) {
-                        DigitalTwinPage()
-                    }
+                DigitalTwinPage()
+            }
             .navigationTitle("")
             .navigationBarHidden(true)
             .onTapGesture {
@@ -138,24 +138,18 @@ struct CompanionView: View {
                 }
             }
         }
-        .sheet(isPresented: $showDigitalTwin) {
-            DigitalTwinPage()
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
-        .sheet(isPresented: $showBrainHealth) {
-            BrainHealthView()
-        }
-        .sheet(isPresented: $showHeartHealth) {
-            HeartHealthView()
-        }
-        .sheet(isPresented: $showMedicalDashboard) {
-            SimpleMedicalDashboardView()
-        }
-        .onAppear {
-            conversations = StorageManager.shared.loadCurrentSession()
-        }
+            .sheet(isPresented: $showDigitalTwin) {
+                DigitalTwinPage()
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+            }
+            .sheet(isPresented: $showBrainHealth) {
+                BrainHealthView()
+            }
+            .sheet(isPresented: $showHeartHealth) {
+                HeartHealthView()
+            }
     }
     
     // MARK: - 全屏Luma角色
@@ -206,9 +200,9 @@ struct CompanionView: View {
                 Menu {
                     // 主要功能
                     Section("Main Features") {
-                        Button(action: { showDigitalTwin = true }) {
-                            Label("Digital Twin", systemImage: "figure.stand")
-                        }
+//                        Button(action: { showDigitalTwin = true }) {
+//                            Label("Digital Twin", systemImage: "figure.stand")
+//                        }
                     }
                     
                     // 健康数据
@@ -217,13 +211,13 @@ struct CompanionView: View {
                             Label("Medical Dashboard", systemImage: "stethoscope.circle.fill")
                         }
                         
-                        Button(action: { showBrainHealth = true }) {
-                            Label("Brain Health", systemImage: "brain.head.profile")
-                        }
-                        
-                        Button(action: { showHeartHealth = true }) {
-                            Label("Heart Health", systemImage: "heart.fill")
-                        }
+//                        Button(action: { showBrainHealth = true }) {
+//                            Label("Brain Health", systemImage: "brain.head.profile")
+//                        }
+//                        
+//                        Button(action: { showHeartHealth = true }) {
+//                            Label("Heart Health", systemImage: "heart.fill")
+//                        }
                     }
                     
                     // 其他功能
@@ -236,9 +230,9 @@ struct CompanionView: View {
                             Label("Health Snapshot", systemImage: "chart.line.uptrend.xyaxis")
                         }
                         
-                        Button(action: { showSettings = true }) {
-                            Label("Settings", systemImage: "gear")
-                        }
+//                        Button(action: { showSettings = true }) {
+//                            Label("Settings", systemImage: "gear")
+//                        }
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal")
