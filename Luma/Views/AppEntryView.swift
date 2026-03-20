@@ -20,17 +20,27 @@ struct AppEntryView: View {
         UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
 
     @State private var showOnboarding = true
+    @State private var didRequestHealthAuth = false
 
     var body: some View {
-        if !hasLaunchedBefore {
-            OnboardingView(
-                showOnboarding: $showOnboarding,
-                hasLaunchedBefore: $hasLaunchedBefore
-            )
-        } else if session.isLoggedIn {
-            CompanionView()
-        } else {
-            AccountLinkView()
+        Group {
+            if !hasLaunchedBefore {
+                OnboardingView(
+                    showOnboarding: $showOnboarding,
+                    hasLaunchedBefore: $hasLaunchedBefore
+                )
+            } else if session.isLoggedIn {
+                CompanionView()
+            } else {
+                AccountLinkView()
+            }
+        }
+        .onAppear {
+            guard !didRequestHealthAuth else { return }
+            didRequestHealthAuth = true
+
+            HealthKitManager.shared.requestAuthorizationIfNeeded()
+            HealthKitManager.shared.logAuthorizationSnapshot()
         }
     }
 }
