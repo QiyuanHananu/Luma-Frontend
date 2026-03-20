@@ -11,7 +11,11 @@ import SwiftUI
 struct HeartHealthView: View {
     @State private var isListening = false
     @State private var trendSelection = "Heart Rate"
-    @State private var healthTip = "Your blood pressure is stable today. Keep it up!"
+    @State private var healthTip = "Keep your Apple Watch snug on wrist for reliable heart-rate sampling."
+    @State private var latestHeartRateBPM: Double?
+    @State private var latestHeartRateTime: Date?
+    @State private var isLoadingHeartRate = false
+    @State private var heartRateError: String?
     private let gutter: CGFloat = 10
     var body: some View {
         HStack {
@@ -47,10 +51,26 @@ struct HeartHealthView: View {
 
                     // cards
                     HStack(spacing: 12) {
-                        FlatStatCard(title: "Heart Rate", value: "72 bpm", tint: .orange)
+                        FlatStatCard(
+                            title: "Heart Rate",
+                            value: heartRateDisplayText,
+                            tint: .orange
+                        )
                             .onTapGesture { trendSelection = "Heart Rate" }
-                        FlatStatCard(title: "Blood Pressure", value: "118/76", tint: .orange)
-                            .onTapGesture { trendSelection = "Blood Pressure" }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Source")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Text("Apple Watch")
+                                .font(.title3)
+                                .bold()
+                                .foregroundColor(.orange)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
                     }
 
                     // Trend placeholder (flat)
@@ -62,10 +82,9 @@ struct HeartHealthView: View {
                             Spacer()
                             Picker("", selection: $trendSelection) {
                                 Text("Heart Rate").tag("Heart Rate")
-                                Text("Blood Pressure").tag("Blood Pressure")
                             }
                             .pickerStyle(.segmented)
-                            .frame(width: 220)
+                            .frame(width: 160)
                         }
 
                         RoundedRectangle(cornerRadius: 12)
@@ -76,6 +95,35 @@ struct HeartHealthView: View {
                                     .foregroundColor(.secondary)
                             )
                     }
+
+                    if let latestHeartRateTime {
+                        Text("Last updated: \(latestHeartRateTime.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let heartRateError {
+                        Text(heartRateError)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+
+                    Button {
+                        fetchLatestHeartRate()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isLoadingHeartRate {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                            }
+                            Text(isLoadingHeartRate ? "Refreshing..." : "Refresh from Apple Watch")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                    }
+                    .disabled(isLoadingHeartRate)
+                    .buttonStyle(.borderedProminent)
                     
                     // ✅ Health Tip card
                     VStack(alignment: .leading, spacing: 8) {
@@ -109,6 +157,35 @@ struct HeartHealthView: View {
         }
         // Keep bottom button visible when keyboard appears
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onAppear {
+            fetchLatestHeartRate()
+        }
+    }
+
+    private var heartRateDisplayText: String {
+        guard let latestHeartRateBPM else { return "-- bpm" }
+        return String(format: "%.0f bpm", latestHeartRateBPM)
+    }
+
+    private func fetchLatestHeartRate() {
+        isLoadingHeartRate = true
+        heartRateError = nil
+
+        HealthKitManager.shared.fetchLatestHeartRate { reading in
+            DispatchQueue.main.async {
+                isLoadingHeartRate = false
+
+                guard let reading else {
+                    latestHeartRateBPM = nil
+                    latestHeartRateTime = nil
+                    heartRateError = "No Apple Watch heart-rate sample found yet. Open Health app and grant Heart Rate read permission."
+                    return
+                }
+
+                latestHeartRateBPM = reading.bpm
+                latestHeartRateTime = reading.endDate
+            }
+        }
     }
 }
 
