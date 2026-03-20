@@ -27,6 +27,10 @@ struct CompanionView: View {
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
     @State private var showMedicalDashboard = false // 显示医疗仪表板
+    @State private var showDigitalTwin = false
+    @State private var showBrainHealth = false
+    @State private var showHeartHealth = false
+    @State private var showSettings = false
     @State private var showDigitalTwinView = false
     @State private var showDashboard = false
     
@@ -139,6 +143,12 @@ struct CompanionView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showBrainHealth) {
+            BrainHealthView()
+        }
+        .sheet(isPresented: $showHeartHealth) {
+            HeartHealthView()
         }
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
@@ -509,6 +519,9 @@ struct CompanionView: View {
             showConversationBubble = false
         }
         StorageManager.shared.saveMessage(userMessage)
+        Task {
+            await ChatService.shared.upload(conversation: userMessage)
+        }
         userInput = ""
         
         // invoke AI model
@@ -526,6 +539,7 @@ struct CompanionView: View {
                     conversations.append(aiMessage)
                     StorageManager.shared.saveMessage(aiMessage)
                 }
+                await ChatService.shared.upload(conversation: aiMessage)
 
             } catch {
                 print("❌ AI error:", error)
