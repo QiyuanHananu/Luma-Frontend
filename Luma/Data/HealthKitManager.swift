@@ -23,10 +23,10 @@ final class HealthKitManager {
     }
 
     func requestAuthorizationIfNeeded() {
-        if hasCompletedInitialAuthorizationFlow {
-            print("ℹ️ HealthKit authorization flow already completed before.")
-            return
-        }
+//        if hasCompletedInitialAuthorizationFlow {
+//            print("ℹ️ HealthKit authorization flow already completed before.")
+//            return
+//        }
         requestAuthorization()
     }
 
@@ -37,13 +37,13 @@ final class HealthKitManager {
             return
         }
 
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
-            print("❌ Failed to create heart rate type.")
+        guard let restingHeartRateType = HKObjectType.quantityType(forIdentifier: .restingHeartRate) else {
+            print("❌ Failed to create resting heart rate type.")
             completion?(false)
             return
         }
 
-        let readTypes: Set<HKObjectType> = [heartRateType]
+        let readTypes: Set<HKObjectType> = [restingHeartRateType]
 
         healthStore.requestAuthorization(toShare: [], read: readTypes) { [weak self] success, error in
             UserDefaults.standard.set(true, forKey: self?.authorizationCallbackKey ?? "healthkit.authorization.callback.received")
@@ -61,7 +61,7 @@ final class HealthKitManager {
 
     // Day 1 scope: permission status visibility for debugging only.
     func logAuthorizationSnapshot() {
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else {
             print("⚠️ Unable to build heartRate type for status snapshot.")
             return
         }
@@ -76,28 +76,9 @@ final class HealthKitManager {
     }
 
     // Day 2 scope (heart rate only): read latest Apple Watch sampled heart rate.
-    func fetchLatestHeartRate(completion: @escaping (HeartRateReading?) -> Void) {
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
-            print("⚠️ Unable to build heartRate type.")
-            completion(nil)
-            return
-        }
-
-        let authStatus = healthStore.authorizationStatus(for: heartRateType)
-        if authStatus == .notDetermined {
-            // Fallback: if app entry flow missed permission prompt, ask here.
-            requestAuthorization { [weak self] success in
-                guard success, let self else {
-                    completion(nil)
-                    return
-                }
-                self.fetchLatestHeartRate(completion: completion)
-            }
-            return
-        }
-
-        guard authStatus == .sharingAuthorized else {
-            print("⚠️ Heart rate read permission not granted yet.")
+    func fetchLatestRestingHeartRate(completion: @escaping (HeartRateReading?) -> Void) {
+        guard let restingHeartRateType = HKObjectType.quantityType(forIdentifier: .restingHeartRate) else {
+            print("❌ Unable to build resting heart rate type.")
             completion(nil)
             return
         }
@@ -108,32 +89,28 @@ final class HealthKitManager {
         )
 
         let query = HKSampleQuery(
-            sampleType: heartRateType,
+            sampleType: restingHeartRateType,
             predicate: nil,
-            limit: HKObjectQueryNoLimit,
+            limit: 1,
             sortDescriptors: [sortDescriptor]
         ) { _, samples, error in
-            if let error {
-                print("❌ Failed to read latest heart rate: \(error.localizedDescription)")
-                completion(nil)
+            if let error = error {
+                print("❌ Resting heart rate query error:", error.localizedDescription)
+                DispatchQueue.main.async { completion(nil) }
                 return
             }
 
-            guard let quantitySamples = samples as? [HKQuantitySample], !quantitySamples.isEmpty else {
-                print("ℹ️ No heart rate sample available.")
-                completion(nil)
-                return
-            }
-
-            guard let sample = quantitySamples.first(where: { $0.isAppleWatchSource }) else {
-                print("ℹ️ No Apple Watch heart rate sample available.")
-                completion(nil)
+            guard let sample = samples?.first as? HKQuantitySample else {
+                print("⚠️ No resting heart rate sample found.")
+                DispatchQueue.main.async { completion(nil) }
                 return
             }
 
             let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-            print("❤️ Latest Apple Watch heart rate: \(String(format: "%.1f", bpm)) bpm at \(sample.endDate)")
-            completion(HeartRateReading(bpm: bpm, endDate: sample.endDate))
+            print("✅ Latest resting heart rate:", bpm, "at", sample.endDate)
+
+            let reading = HeartRateReading(bpm: bpm, endDate: sample.endDate)
+            DispatchQueue.main.async { completion(reading) }
         }
 
         healthStore.execute(query)

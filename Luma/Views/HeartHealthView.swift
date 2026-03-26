@@ -171,7 +171,7 @@ struct HeartHealthView: View {
         isLoadingHeartRate = true
         heartRateError = nil
 
-        HealthKitManager.shared.fetchLatestHeartRate { reading in
+        HealthKitManager.shared.fetchLatestRestingHeartRate { reading in
             DispatchQueue.main.async {
                 isLoadingHeartRate = false
 
