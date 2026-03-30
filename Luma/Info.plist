@@ -9,7 +9,7 @@
 	<key>SUPABASE_URL</key>
 	<string>https://bikvyomatpnktvjpkfai.supabase.co</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Luma reads heart rate, steps, and sleep data from Health to provide personalized wellness insights.</string>
+	<string>Luma reads heart rate, HRV, and sleep data from Apple Health to provide personalized wellness insights.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

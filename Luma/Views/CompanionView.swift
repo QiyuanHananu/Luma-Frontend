@@ -30,6 +30,8 @@ struct CompanionView: View {
     @State private var showDigitalTwin = false
     @State private var showBrainHealth = false
     @State private var showHeartHealth = false
+    @State private var showHRVHealth = false
+    @State private var showSleepHealth = false
     @State private var showSettings = false
     @State private var showDigitalTwinView = false
     @State private var showDashboard = false
@@ -150,6 +152,12 @@ struct CompanionView: View {
         .sheet(isPresented: $showHeartHealth) {
             HeartHealthView()
         }
+        .sheet(isPresented: $showHRVHealth) {
+            HRVHealthView()
+        }
+        .sheet(isPresented: $showSleepHealth) {
+            SleepHealthView()
+        }
         .sheet(isPresented: $showMedicalDashboard) {
             SimpleMedicalDashboardView()
         }
@@ -223,6 +231,14 @@ struct CompanionView: View {
                         
                         Button(action: { showHeartHealth = true }) {
                             Label("Heart Health", systemImage: "heart.fill")
+                        }
+
+                        Button(action: { showHRVHealth = true }) {
+                            Label("HRV Health", systemImage: "waveform.path.ecg")
+                        }
+
+                        Button(action: { showSleepHealth = true }) {
+                            Label("Sleep Health", systemImage: "bed.double.fill")
                         }
                     }
                     
