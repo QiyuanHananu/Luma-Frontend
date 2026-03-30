@@ -93,15 +93,13 @@ final class HealthKitManager {
     }
 
     func fetchLatestHealthSnapshot(completion: @escaping (HealthSnapshot?) -> Void) {
-        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+        guard HKObjectType.quantityType(forIdentifier: .heartRate) != nil else {
             print("⚠️ Unable to build heartRate type.")
             completion(nil)
             return
         }
 
-        let authStatus = healthStore.authorizationStatus(for: heartRateType)
-        if authStatus == .notDetermined {
-            // Fallback: if app entry flow missed permission prompt, ask here.
+        if !hasCompletedInitialAuthorizationFlow {
             requestAuthorization { [weak self] success in
                 guard success, let self else {
                     completion(nil)
@@ -109,12 +107,6 @@ final class HealthKitManager {
                 }
                 self.fetchLatestHealthSnapshot(completion: completion)
             }
-            return
-        }
-
-        guard authStatus == .sharingAuthorized else {
-            print("⚠️ Health read permission not granted yet.")
-            completion(nil)
             return
         }
 
@@ -166,6 +158,17 @@ final class HealthKitManager {
             return
         }
 
+        if !hasCompletedInitialAuthorizationFlow {
+            requestAuthorization { [weak self] success in
+                guard success, let self else {
+                    completion(nil)
+                    return
+                }
+                self.fetchLatestHeartRate(completion: completion)
+            }
+            return
+        }
+
         let sortDescriptor = NSSortDescriptor(
             key: HKSampleSortIdentifierEndDate,
             ascending: false
@@ -210,8 +213,7 @@ final class HealthKitManager {
             return
         }
 
-        let authStatus = healthStore.authorizationStatus(for: hrvType)
-        if authStatus == .notDetermined {
+        if !hasCompletedInitialAuthorizationFlow {
             requestAuthorization { [weak self] success in
                 guard success, let self else {
                     completion(nil)
@@ -219,12 +221,6 @@ final class HealthKitManager {
                 }
                 self.fetchAverageHRVLast24Hours(completion: completion)
             }
-            return
-        }
-
-        guard authStatus == .sharingAuthorized else {
-            print("⚠️ HRV read permission not granted yet.")
-            completion(nil)
             return
         }
 
@@ -275,8 +271,7 @@ final class HealthKitManager {
             return
         }
 
-        let authStatus = healthStore.authorizationStatus(for: sleepType)
-        if authStatus == .notDetermined {
+        if !hasCompletedInitialAuthorizationFlow {
             requestAuthorization { [weak self] success in
                 guard success, let self else {
                     completion(nil)
@@ -284,12 +279,6 @@ final class HealthKitManager {
                 }
                 self.fetchSleepHoursFromLastNight(completion: completion)
             }
-            return
-        }
-
-        guard authStatus == .sharingAuthorized else {
-            print("⚠️ Sleep read permission not granted yet.")
-            completion(nil)
             return
         }
 
