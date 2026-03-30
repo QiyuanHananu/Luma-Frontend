@@ -10,7 +10,6 @@ import SwiftUI
 // MARK: - Main page
 struct HeartHealthView: View {
     @State private var isListening = false
-    @State private var trendSelection = "Heart Rate"
     @State private var healthTip = "Keep your Apple Watch snug on wrist for reliable heart-rate sampling."
     @State private var latestHeartRateBPM: Double?
     @State private var latestHeartRateTime: Date?
@@ -56,14 +55,13 @@ struct HeartHealthView: View {
                             value: heartRateDisplayText,
                             tint: .orange
                         )
-                            .onTapGesture { trendSelection = "Heart Rate" }
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Source")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             Text("Apple Watch")
-                                .font(.title3)
+                                .font(.headline)
                                 .bold()
                                 .foregroundColor(.orange)
                         }
@@ -76,22 +74,17 @@ struct HeartHealthView: View {
                     // Trend placeholder (flat)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text(trendSelection)
+                            Text("Heart Rate")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Picker("", selection: $trendSelection) {
-                                Text("Heart Rate").tag("Heart Rate")
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 160)
                         }
 
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(.secondarySystemBackground))
                             .frame(height: 220)
                             .overlay(
-                                Text("📈 \(trendSelection) Chart")
+                                Text("📈 Heart Rate Chart")
                                     .foregroundColor(.secondary)
                             )
                     }
@@ -171,7 +164,7 @@ struct HeartHealthView: View {
         isLoadingHeartRate = true
         heartRateError = nil
 
-        HealthKitManager.shared.fetchLatestRestingHeartRate { reading in
+        HealthKitManager.shared.fetchLatestHeartRate { reading in
             DispatchQueue.main.async {
                 isLoadingHeartRate = false
 
@@ -184,6 +177,13 @@ struct HeartHealthView: View {
 
                 latestHeartRateBPM = reading.bpm
                 latestHeartRateTime = reading.endDate
+
+                Task {
+                    await HealthMetricsService.shared.uploadHeartRate(
+                        bpm: reading.bpm,
+                        sampledAt: reading.endDate
+                    )
+                }
             }
         }
     }

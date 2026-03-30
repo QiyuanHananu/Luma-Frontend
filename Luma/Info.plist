@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>API_BASE_URL</key>
-	<string>http://192.168.1.9:8001</string>
+	<string>http://192.168.89.10:8001</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>your_supabase_anon_key</string>
 	<key>SUPABASE_URL</key>
 	<string>https://bikvyomatpnktvjpkfai.supabase.co</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Luma reads heart rate data from Apple Health to provide personalized wellness insights.</string>
+	<string>Luma reads heart rate, steps, and sleep data from Health to provide personalized wellness insights.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
