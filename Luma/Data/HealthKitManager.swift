@@ -44,6 +44,7 @@ final class HealthKitManager {
         }
 
         let readTypes: Set<HKObjectType> = [restingHeartRateType]
+        
 
         healthStore.requestAuthorization(toShare: [], read: readTypes) { [weak self] success, error in
             UserDefaults.standard.set(true, forKey: self?.authorizationCallbackKey ?? "healthkit.authorization.callback.received")
