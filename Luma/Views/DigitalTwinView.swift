@@ -83,27 +83,11 @@ struct DigitalTwinView: View {
             .padding(.horizontal, 12)
             .padding(.top, 12)
 
-            // Replace this system image with your actual human body asset if you have one.
-            // Example:
-            // Image("body_model")
-            //     .resizable()
-            //     .scaledToFit()
-            Image(systemName: "figure.stand")
+            Image("HumanBodyFigure")
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.95),
-                            Color.cyan.opacity(0.55),
-                            Color.blue.opacity(0.35)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .shadow(color: .cyan.opacity(0.45), radius: 22)
-                .shadow(color: .white.opacity(0.18), radius: 10)
+                .shadow(color: .cyan.opacity(0.30), radius: 18)
+                .shadow(color: .white.opacity(0.10), radius: 8)
                 .padding(.vertical, 22)
                 .padding(.horizontal, 42)
 
