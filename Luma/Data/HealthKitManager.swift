@@ -92,6 +92,12 @@ final class HealthKitManager {
         let capturedAt: Date
     }
 
+    struct DailyTrendPoint: Identifiable {
+        let date: Date
+        let value: Double
+        var id: Date { date }
+    }
+
     func fetchLatestHealthSnapshot(completion: @escaping (HealthSnapshot?) -> Void) {
         guard HKObjectType.quantityType(forIdentifier: .heartRate) != nil else {
             print("⚠️ Unable to build heartRate type.")
@@ -201,6 +207,87 @@ final class HealthKitManager {
             let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
             print("❤️ Latest Apple Watch heart rate: \(String(format: "%.1f", bpm)) bpm at \(sample.endDate)")
             completion(HeartRateReading(bpm: bpm, endDate: sample.endDate))
+        }
+
+        healthStore.execute(query)
+    }
+
+    // Heart rate trend: average Apple Watch heart rate for each of the last 7 days.
+    func fetchHeartRateTrendLast7Days(completion: @escaping ([DailyTrendPoint]) -> Void) {
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+            completion([])
+            return
+        }
+
+        if !hasCompletedInitialAuthorizationFlow {
+            requestAuthorization { [weak self] success in
+                guard success, let self else {
+                    completion([])
+                    return
+                }
+                self.fetchHeartRateTrendLast7Days(completion: completion)
+            }
+            return
+        }
+
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard
+            let startDate = calendar.date(byAdding: .day, value: -6, to: startOfToday),
+            let endDate = calendar.date(byAdding: .day, value: 1, to: startOfToday)
+        else {
+            completion([])
+            return
+        }
+
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)
+
+        let query = HKSampleQuery(
+            sampleType: heartRateType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            if let error {
+                print("❌ Failed to read heart-rate trend: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let quantitySamples = samples as? [HKQuantitySample], !quantitySamples.isEmpty else {
+                print("ℹ️ No heart-rate samples for last 7 days.")
+                completion([])
+                return
+            }
+
+            let watchSamples = quantitySamples.filter(\.isAppleWatchSource)
+            guard !watchSamples.isEmpty else {
+                print("ℹ️ No Apple Watch heart-rate samples for last 7 days.")
+                completion([])
+                return
+            }
+
+            var groupedValues: [Date: [Double]] = [:]
+            for sample in watchSamples {
+                let day = calendar.startOfDay(for: sample.endDate)
+                let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                groupedValues[day, default: []].append(bpm)
+            }
+
+            let points: [DailyTrendPoint] = (0..<7).compactMap { offset in
+                guard let day = calendar.date(byAdding: .day, value: offset, to: startDate),
+                      let values = groupedValues[day],
+                      !values.isEmpty else {
+                    return nil
+                }
+
+                let avg = values.reduce(0, +) / Double(values.count)
+                return DailyTrendPoint(date: day, value: avg)
+            }
+
+            print("📈 Heart-rate trend points (7d): \(points.count)")
+            completion(points)
         }
 
         healthStore.execute(query)
@@ -334,6 +421,89 @@ final class HealthKitManager {
 
         healthStore.execute(query)
     }
+
+    // Sleep trend: asleep duration per night for the last 7 nights.
+    func fetchSleepTrendLast7Nights(completion: @escaping ([DailyTrendPoint]) -> Void) {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            completion([])
+            return
+        }
+
+        if !hasCompletedInitialAuthorizationFlow {
+            requestAuthorization { [weak self] success in
+                guard success, let self else {
+                    completion([])
+                    return
+                }
+                self.fetchSleepTrendLast7Nights(completion: completion)
+            }
+            return
+        }
+
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard
+            let firstNightAnchor = calendar.date(byAdding: .day, value: -6, to: startOfToday),
+            let rangeStart = calendar.date(byAdding: .hour, value: 18, to: firstNightAnchor),
+            let rangeEnd = calendar.date(byAdding: .hour, value: 12, to: startOfToday)
+        else {
+            completion([])
+            return
+        }
+
+        let predicate = HKQuery.predicateForSamples(withStart: rangeStart, end: rangeEnd)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)
+
+        let query = HKSampleQuery(
+            sampleType: sleepType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            if let error {
+                print("❌ Failed to read sleep trend: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let categorySamples = samples as? [HKCategorySample], !categorySamples.isEmpty else {
+                print("ℹ️ No sleep samples for last 7 nights.")
+                completion([])
+                return
+            }
+
+            let watchSamples = categorySamples
+                .filter(\.isAppleWatchSource)
+                .filter { HKCategoryValueSleepAnalysis(rawValue: $0.value).isAsleep }
+
+            guard !watchSamples.isEmpty else {
+                print("ℹ️ No Apple Watch asleep samples for last 7 nights.")
+                completion([])
+                return
+            }
+
+            var durationsByNight: [Date: TimeInterval] = [:]
+            for sample in watchSamples {
+                let nightAnchor = calendar.nightAnchor(for: sample.startDate)
+                durationsByNight[nightAnchor, default: 0] += sample.endDate.timeIntervalSince(sample.startDate)
+            }
+
+            let points: [DailyTrendPoint] = (0..<7).compactMap { offset in
+                guard let nightAnchor = calendar.date(byAdding: .day, value: offset, to: firstNightAnchor),
+                      let duration = durationsByNight[nightAnchor],
+                      duration > 0 else {
+                    return nil
+                }
+
+                return DailyTrendPoint(date: nightAnchor, value: duration / 3600.0)
+            }
+
+            print("📈 Sleep trend points (7 nights): \(points.count)")
+            completion(points)
+        }
+
+        healthStore.execute(query)
+    }
 }
 
 private extension HKAuthorizationStatus {
@@ -369,5 +539,17 @@ private extension HKCategoryValueSleepAnalysis? {
         default:
             return false
         }
+    }
+}
+
+private extension Calendar {
+    // Assign sleep samples before noon to previous evening's night bucket.
+    func nightAnchor(for date: Date) -> Date {
+        let dayStart = startOfDay(for: date)
+        let hour = component(.hour, from: date)
+        if hour < 12 {
+            return self.date(byAdding: .day, value: -1, to: dayStart) ?? dayStart
+        }
+        return dayStart
     }
 }

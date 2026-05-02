@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import Charts
 
 struct SleepHealthView: View {
     @State private var isListening = false
@@ -11,6 +12,7 @@ struct SleepHealthView: View {
     @State private var latestUpdateTime: Date?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var weeklySleepTrend: [HealthKitManager.DailyTrendPoint] = []
     private let gutter: CGFloat = 10
 
     var body: some View {
@@ -54,6 +56,52 @@ struct SleepHealthView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
                     }
 
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Sleep Duration (7 Nights)")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
+
+                        if weeklySleepTrend.isEmpty {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                                .frame(height: 220)
+                                .overlay(
+                                    Text("No 7-night sleep trend yet.")
+                                        .foregroundColor(.secondary)
+                                )
+                        } else {
+                            Chart(weeklySleepTrend) { point in
+                                LineMark(
+                                    x: .value("Date", point.date),
+                                    y: .value("Hours", point.value)
+                                )
+                                .foregroundStyle(.purple)
+                                .interpolationMethod(.catmullRom)
+
+                                PointMark(
+                                    x: .value("Date", point.date),
+                                    y: .value("Hours", point.value)
+                                )
+                                .foregroundStyle(.purple)
+                            }
+                            .chartXAxis {
+                                AxisMarks(values: .stride(by: .day)) {
+                                    AxisGridLine()
+                                    AxisTick()
+                                    AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                                }
+                            }
+                            .chartYScale(domain: .automatic(includesZero: false))
+                            .frame(height: 220)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 8)
+                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
                     if let latestUpdateTime {
                         Text("Last updated: \(latestUpdateTime.formatted(date: .abbreviated, time: .shortened))")
                             .font(.caption)
@@ -68,6 +116,7 @@ struct SleepHealthView: View {
 
                     Button {
                         fetchLatestSleep()
+                        fetchSleepTrend()
                     } label: {
                         HStack(spacing: 8) {
                             if isLoading {
@@ -100,6 +149,7 @@ struct SleepHealthView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             fetchLatestSleep()
+            fetchSleepTrend()
         }
     }
 
@@ -132,6 +182,14 @@ struct SleepHealthView: View {
                         sampledAt: Date()
                     )
                 }
+            }
+        }
+    }
+
+    private func fetchSleepTrend() {
+        HealthKitManager.shared.fetchSleepTrendLast7Nights { points in
+            DispatchQueue.main.async {
+                weeklySleepTrend = points
             }
         }
     }

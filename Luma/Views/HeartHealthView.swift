@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Charts
 
 // MARK: - Main page
 struct HeartHealthView: View {
@@ -15,6 +16,7 @@ struct HeartHealthView: View {
     @State private var latestHeartRateTime: Date?
     @State private var isLoadingHeartRate = false
     @State private var heartRateError: String?
+    @State private var weeklyHeartRateTrend: [HealthKitManager.DailyTrendPoint] = []
     private let gutter: CGFloat = 10
     var body: some View {
         HStack {
@@ -71,22 +73,50 @@ struct HeartHealthView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
                     }
 
-                    // Trend placeholder (flat)
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Heart Rate")
+                            Text("Heart Rate (7 Days)")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                             Spacer()
                         }
+                        
+                        if weeklyHeartRateTrend.isEmpty {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                                .frame(height: 220)
+                                .overlay(
+                                    Text("No 7-day heart-rate trend yet.")
+                                        .foregroundColor(.secondary)
+                                )
+                        } else {
+                            Chart(weeklyHeartRateTrend) { point in
+                                LineMark(
+                                    x: .value("Date", point.date),
+                                    y: .value("BPM", point.value)
+                                )
+                                .foregroundStyle(.orange)
+                                .interpolationMethod(.catmullRom)
 
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemBackground))
+                                PointMark(
+                                    x: .value("Date", point.date),
+                                    y: .value("BPM", point.value)
+                                )
+                                .foregroundStyle(.orange)
+                            }
+                            .chartXAxis {
+                                AxisMarks(values: .stride(by: .day)) {
+                                    AxisGridLine()
+                                    AxisTick()
+                                    AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                                }
+                            }
+                            .chartYScale(domain: .automatic(includesZero: false))
                             .frame(height: 220)
-                            .overlay(
-                                Text("📈 Heart Rate Chart")
-                                    .foregroundColor(.secondary)
-                            )
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 8)
+                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        }
                     }
 
                     if let latestHeartRateTime {
@@ -103,6 +133,7 @@ struct HeartHealthView: View {
 
                     Button {
                         fetchLatestHeartRate()
+                        fetchHeartRateTrend()
                     } label: {
                         HStack(spacing: 8) {
                             if isLoadingHeartRate {
@@ -152,6 +183,7 @@ struct HeartHealthView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             fetchLatestHeartRate()
+            fetchHeartRateTrend()
         }
     }
 
@@ -184,6 +216,14 @@ struct HeartHealthView: View {
                         sampledAt: reading.endDate
                     )
                 }
+            }
+        }
+    }
+
+    private func fetchHeartRateTrend() {
+        HealthKitManager.shared.fetchHeartRateTrendLast7Days { points in
+            DispatchQueue.main.async {
+                weeklyHeartRateTrend = points
             }
         }
     }

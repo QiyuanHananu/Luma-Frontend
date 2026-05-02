@@ -98,7 +98,7 @@ struct CompanionView: View {
                         .presentationDetents([.medium])
                 }
             .navigationDestination(isPresented: $showDigitalTwinView) {
-                        DigitalTwinPage()
+                        DigitalTwinView()
                     }
             .navigationTitle("")
             .navigationBarHidden(true)
@@ -141,7 +141,7 @@ struct CompanionView: View {
             }
         }
         .sheet(isPresented: $showDigitalTwin) {
-            DigitalTwinPage()
+            DigitalTwinView()
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()

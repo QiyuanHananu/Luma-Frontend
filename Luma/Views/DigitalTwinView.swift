@@ -2,6 +2,10 @@ import SwiftUI
 
 struct DigitalTwinView: View {
     @State private var selectedInsight: InsightItem? = nil
+    @State private var showHeartHealth = false
+    @State private var showHRVHealth = false
+    @State private var showSleepHealth = false
+    @State private var selectedMetricDetail: MetricDetailItem? = nil
 
     var body: some View {
         GeometryReader { geo in
@@ -31,6 +35,20 @@ struct DigitalTwinView: View {
         .sheet(item: $selectedInsight) { insight in
             InsightBottomSheet(insight: insight)
                 .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showHeartHealth) {
+            HeartHealthView()
+        }
+        .sheet(isPresented: $showHRVHealth) {
+            HRVHealthView()
+        }
+        .sheet(isPresented: $showSleepHealth) {
+            SleepHealthView()
+        }
+        .sheet(item: $selectedMetricDetail) { metric in
+            MetricDetailSheet(metric: metric)
+                .presentationDetents([.fraction(0.35), .medium])
                 .presentationDragIndicator(.visible)
         }
     }
@@ -96,35 +114,55 @@ struct DigitalTwinView: View {
                 title: "Sleep",
                 value: "5.4h",
                 statusColor: .red
-            )
+            ) {
+                showSleepHealth = true
+            }
             .offset(x: 0, y: -165)
 
             MetricBubble(
                 title: "HRV",
                 value: "28 ms",
                 statusColor: .red
-            )
+            ) {
+                showHRVHealth = true
+            }
             .offset(x: -70, y: -82)
 
             MetricBubble(
                 title: "SpO2",
                 value: "97%",
                 statusColor: .blue
-            )
+            ) {
+                selectedMetricDetail = MetricDetailItem(
+                    title: "SpO2",
+                    value: "97%",
+                    statusColor: .blue,
+                    description: "Blood oxygen looks stable right now. Keep monitoring trends with sleep and heart rate."
+                )
+            }
             .offset(x: 70, y: -75)
 
             MetricBubble(
                 title: "HR",
                 value: "102 bpm",
                 statusColor: .red
-            )
+            ) {
+                showHeartHealth = true
+            }
             .offset(x: 0, y: -28)
 
             MetricBubble(
                 title: "Steps",
                 value: "3.8k",
                 statusColor: .yellow
-            )
+            ) {
+                selectedMetricDetail = MetricDetailItem(
+                    title: "Steps",
+                    value: "3.8k",
+                    statusColor: .yellow,
+                    description: "Movement is moderate. A short walk can improve circulation and lower stress load."
+                )
+            }
             .offset(x: 0, y: 168)
         }
         .padding(.horizontal, 16)
@@ -177,29 +215,73 @@ struct MetricBubble: View {
     let title: String
     let value: String
     let statusColor: Color
+    let onTap: () -> Void
 
     var body: some View {
-        VStack(spacing: 4) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 14, height: 14)
-                .shadow(color: statusColor.opacity(0.7), radius: 8)
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 14, height: 14)
+                    .shadow(color: statusColor.opacity(0.7), radius: 8)
 
-            VStack(spacing: 2) {
-                Text(title)
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                VStack(spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
 
-                Text(value)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.primary)
+                    Text(value)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.94))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
             }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 7)
-            .background(Color.white.opacity(0.94))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
         }
+        .buttonStyle(.plain)
+    }
+}
+
+struct MetricDetailItem: Identifiable {
+    let id = UUID()
+    let title: String
+    let value: String
+    let statusColor: Color
+    let description: String
+}
+
+struct MetricDetailSheet: View {
+    let metric: MetricDetailItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(metric.statusColor)
+                    .frame(width: 10, height: 10)
+
+                Text(metric.title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+            }
+
+            Text(metric.value)
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            Text(metric.description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineSpacing(4)
+
+            Spacer()
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(.systemBackground))
     }
 }
 
@@ -416,7 +498,7 @@ struct InsightItem: Identifiable {
 
     static let sampleData: [InsightItem] = [
         InsightItem(
-            title: "Recovery Strain",
+            title: "Recovery Readiness",
             statusText: "Needs Attention",
             statusColor: .red,
             shortSummary: "Short sleep and low recovery signals appeared together this week.",
@@ -433,7 +515,7 @@ struct InsightItem: Identifiable {
             aiSummary: "AI placeholder: Luma detected a possible recovery strain pattern based on lower sleep duration and reduced HRV. This summary can later be generated from real wearable data, journal signals, and recent wellbeing trends."
         ),
         InsightItem(
-            title: "Stress Without Movement",
+            title: "Cardiac Stress Load",
             statusText: "Needs Attention",
             statusColor: .red,
             shortSummary: "Elevated heart rate appeared alongside low movement.",
