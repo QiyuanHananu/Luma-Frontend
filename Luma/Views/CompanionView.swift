@@ -258,7 +258,7 @@ struct CompanionView: View {
                     
                     // 其他功能
                     Section("More") {
-                        Button(action: { 
+                        Button(action: {
                             withAnimation {
                                 showHealthSnapshot.toggle()
                             }
@@ -793,23 +793,12 @@ struct CompanionView: View {
     }
 
     private func refreshRiskAlertState() async {
-        do {
-            let response: RiskAlertListResponse = try await APIClient.shared.request(
-                path: "/api/alerts/risk/?limit=1",
-                method: "GET",
-                requiresAuth: true
-            )
-            let latest = response.alerts.first
-            let shouldShow = latest?.riskLevel.lowercased() == "high" || latest?.riskLevel.lowercased() == "medium"
-            await MainActor.run {
-                activeRiskAlert = shouldShow ? latest : nil
-                applySafetyInteraction(for: shouldShow ? latest : nil)
-            }
-        } catch {
-            await MainActor.run {
-                activeRiskAlert = nil
-                applySafetyInteraction(for: nil)
-            }
+        // Risk alert has been replaced by proactive tracking on the dashboard.
+        // Keep this as a no-op so the companion page no longer calls the old
+        // /api/alerts/risk/ endpoint.
+        await MainActor.run {
+            activeRiskAlert = nil
+            applySafetyInteraction(for: nil)
         }
     }
 
@@ -1403,7 +1392,7 @@ struct ZzzOverlay: View {
         .foregroundColor(.gray)
         .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: up)
         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: opacity)
-        .onAppear { 
+        .onAppear {
             up = true
             opacity = 0.8
         }
