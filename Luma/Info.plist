@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>API_BASE_URL</key>
-	<string>http://127.0.0.1:8001</string>
+	<string>http://172.20.10.2:8001</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>sb_publishable_GnDFhyeEarDMSZxZAbmOyA_MlFk3y2k</string>
 	<key>SUPABASE_URL</key>

@@ -85,6 +85,12 @@ final class HealthKitManager {
         let endDate: Date
     }
 
+    struct HRVReading {
+        let sdnnMs: Double
+        let startDate: Date
+        let endDate: Date
+    }
+
     struct HealthSnapshot {
         let heartRate: HeartRateReading?
         let hrvSDNNMs: Double?
@@ -206,6 +212,7 @@ final class HealthKitManager {
         healthStore.execute(query)
     }
 
+
     // HRV (SDNN): average Apple Watch samples from the last 24 hours, in ms.
     func fetchAverageHRVLast24Hours(completion: @escaping (Double?) -> Void) {
         guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
@@ -259,6 +266,79 @@ final class HealthKitManager {
             let avg = values.reduce(0, +) / Double(values.count)
             print("💓 HRV (SDNN) avg last 24h: \(String(format: "%.1f", avg)) ms")
             completion(avg)
+        }
+
+        healthStore.execute(query)
+    }
+
+    // HRV trend: fetch Apple Watch / Health app HRV samples for a custom date range, in ms.
+    func fetchHRVReadings(
+        from startDate: Date,
+        to endDate: Date = Date(),
+        completion: @escaping ([HRVReading]) -> Void
+    ) {
+        guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
+            completion([])
+            return
+        }
+
+        if !hasCompletedInitialAuthorizationFlow {
+            requestAuthorization { [weak self] success in
+                guard success, let self else {
+                    completion([])
+                    return
+                }
+                self.fetchHRVReadings(from: startDate, to: endDate, completion: completion)
+            }
+            return
+        }
+
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startDate,
+            end: endDate,
+            options: .strictStartDate
+        )
+
+        let sortDescriptor = NSSortDescriptor(
+            key: HKSampleSortIdentifierStartDate,
+            ascending: true
+        )
+
+        let query = HKSampleQuery(
+            sampleType: hrvType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            if let error {
+                print("❌ Failed to read HRV trend samples: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            let quantitySamples = samples as? [HKQuantitySample] ?? []
+            guard !quantitySamples.isEmpty else {
+                print("ℹ️ No HRV trend sample available in selected range.")
+                completion([])
+                return
+            }
+
+            let watchSamples = quantitySamples.filter(\.isAppleWatchSource)
+
+            // Prefer Apple Watch samples. If source metadata is unavailable, fall back to all HRV samples
+            // so the chart can still display data already synced into Apple Health.
+            let displaySamples = watchSamples.isEmpty ? quantitySamples : watchSamples
+
+            let readings = displaySamples.map { sample in
+                HRVReading(
+                    sdnnMs: sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)),
+                    startDate: sample.startDate,
+                    endDate: sample.endDate
+                )
+            }
+
+            print("💓 HRV trend samples loaded: \(readings.count) from \(startDate) to \(endDate)")
+            completion(readings)
         }
 
         healthStore.execute(query)
@@ -353,10 +433,16 @@ private extension HKAuthorizationStatus {
 
 private extension HKSample {
     var isAppleWatchSource: Bool {
-        guard let productType = sourceRevision.productType else {
-            return false
-        }
-        return productType.lowercased().hasPrefix("watch")
+        let sourceName = sourceRevision.source.name.lowercased()
+        let productType = sourceRevision.productType?.lowercased() ?? ""
+        let deviceName = device?.name?.lowercased() ?? ""
+        let deviceManufacturer = device?.manufacturer?.lowercased() ?? ""
+
+        return productType.hasPrefix("watch") ||
+            productType.contains("watch") ||
+            sourceName.contains("watch") ||
+            deviceName.contains("watch") ||
+            deviceManufacturer.contains("apple")
     }
 }
 

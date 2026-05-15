@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Charts
+import HealthKit
 
 // MARK: - Main page
 struct HeartHealthView: View {
@@ -15,7 +17,10 @@ struct HeartHealthView: View {
     @State private var latestHeartRateTime: Date?
     @State private var isLoadingHeartRate = false
     @State private var heartRateError: String?
+    @State private var selectedRange: HeartRateChartRange = .day
+    @State private var heartRateChartData: [HeartRateChartPoint] = []
     private let gutter: CGFloat = 10
+    private let healthStore = HKHealthStore()
     var body: some View {
         HStack {
             Text("Your Health Manager")
@@ -71,23 +76,7 @@ struct HeartHealthView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
                     }
 
-                    // Trend placeholder (flat)
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Heart Rate")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.secondarySystemBackground))
-                            .frame(height: 220)
-                            .overlay(
-                                Text("📈 Heart Rate Chart")
-                                    .foregroundColor(.secondary)
-                            )
-                    }
+                    heartRateTrendSection
 
                     if let latestHeartRateTime {
                         Text("Last updated: \(latestHeartRateTime.formatted(date: .abbreviated, time: .shortened))")
@@ -160,6 +149,147 @@ struct HeartHealthView: View {
         return String(format: "%.0f bpm", latestHeartRateBPM)
     }
 
+    private var heartRateTrendSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Heart Rate Trend")
+                        .font(.headline)
+                    Text("View your heart-rate records by day, week, or month.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+
+            Picker("Range", selection: $selectedRange) {
+                ForEach(HeartRateChartRange.allCases) { range in
+                    Text(range.title).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: selectedRange) { _, _ in
+                fetchHeartRateChartData()
+            }
+
+            if heartRateChartData.isEmpty {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.secondarySystemGroupedBackground))
+                    .frame(height: 220)
+                    .overlay(
+                        Text("No heart-rate trend data available yet.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    )
+            } else {
+                Chart(heartRateChartData) { point in
+                    LineMark(
+                        x: .value("Time", point.date),
+                        y: .value("Heart Rate", point.bpm)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .foregroundStyle(Color.orange)
+                }
+                .chartYAxisLabel("bpm")
+                .frame(height: 220)
+                .padding(12)
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
+            }
+        }
+    }
+
+    private func fetchHeartRateChartData() {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            heartRateChartData = []
+            heartRateError = "Health data is not available on this device."
+            return
+        }
+
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
+            heartRateChartData = []
+            heartRateError = "Heart-rate data type is not available."
+            return
+        }
+
+        let calendar = Calendar.current
+        let now = Date()
+        let startDate: Date
+
+        switch selectedRange {
+        case .day:
+            startDate = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        case .week:
+            startDate = calendar.date(byAdding: .day, value: -7, to: now) ?? now
+        case .month:
+            startDate = calendar.date(byAdding: .day, value: -30, to: now) ?? now
+        }
+
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startDate,
+            end: now,
+            options: .strictStartDate
+        )
+
+        let sortDescriptor = NSSortDescriptor(
+            key: HKSampleSortIdentifierStartDate,
+            ascending: true
+        )
+
+        let query = HKSampleQuery(
+            sampleType: heartRateType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            DispatchQueue.main.async {
+                if let error {
+                    heartRateChartData = []
+                    heartRateError = "Failed to load heart-rate trend: \(error.localizedDescription)"
+                    return
+                }
+
+                let quantitySamples = samples as? [HKQuantitySample] ?? []
+                let watchSamples = quantitySamples.filter { sample in
+                    isAppleWatchSample(sample)
+                }
+
+                // Prefer Apple Watch samples. If source metadata is unavailable,
+                // fall back to all heart-rate samples already synced into Apple Health.
+                let displaySamples = watchSamples.isEmpty ? quantitySamples : watchSamples
+
+                heartRateChartData = displaySamples.map { sample in
+                    HeartRateChartPoint(
+                        date: sample.startDate,
+                        bpm: sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+                    )
+                }
+
+                if heartRateChartData.isEmpty {
+                    heartRateError = "No Apple Watch heart-rate trend samples found for this range."
+                } else if heartRateError?.hasPrefix("No Apple Watch heart-rate") == true || heartRateError?.hasPrefix("Failed to load heart-rate trend") == true {
+                    heartRateError = nil
+                }
+            }
+        }
+
+        healthStore.execute(query)
+    }
+
+    private func isAppleWatchSample(_ sample: HKQuantitySample) -> Bool {
+        let sourceName = sample.sourceRevision.source.name.lowercased()
+        let productType = sample.sourceRevision.productType?.lowercased() ?? ""
+        let deviceName = sample.device?.name?.lowercased() ?? ""
+        let deviceManufacturer = sample.device?.manufacturer?.lowercased() ?? ""
+
+        return productType.hasPrefix("watch") ||
+            productType.contains("watch") ||
+            sourceName.contains("watch") ||
+            deviceName.contains("watch") ||
+            deviceManufacturer.contains("apple")
+    }
+
     private func fetchLatestHeartRate() {
         isLoadingHeartRate = true
         heartRateError = nil
@@ -172,11 +302,13 @@ struct HeartHealthView: View {
                     latestHeartRateBPM = nil
                     latestHeartRateTime = nil
                     heartRateError = "No Apple Watch heart-rate sample found yet. Open Health app and grant Heart Rate read permission."
+                    fetchHeartRateChartData()
                     return
                 }
 
                 latestHeartRateBPM = reading.bpm
                 latestHeartRateTime = reading.endDate
+                fetchHeartRateChartData()
 
                 Task {
                     await HealthMetricsService.shared.uploadHeartRate(
@@ -409,4 +541,30 @@ struct FlatContainerCard<Content: View>: View {
 }
 #Preview {
     HeartHealthView()
+}
+
+
+private enum HeartRateChartRange: String, CaseIterable, Identifiable {
+    case day
+    case week
+    case month
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .day:
+            return "Day"
+        case .week:
+            return "Week"
+        case .month:
+            return "Month"
+        }
+    }
+}
+
+private struct HeartRateChartPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let bpm: Double
 }
