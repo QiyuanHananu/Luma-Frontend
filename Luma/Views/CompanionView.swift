@@ -31,6 +31,7 @@ struct CompanionView: View {
     @State private var isChatFocusMode = false
     @State private var activeRiskAlert: RiskAlertItem?
     @State private var isAwaitingAIReply = false
+    @FocusState private var isInputFocused: Bool
     
     
     private func generateMockSummary() -> MentalHealthSummary {
@@ -197,6 +198,7 @@ struct CompanionView: View {
                     Button("Done") {
                         withAnimation(.easeInOut) {
                             isChatFocusMode = false
+                            isInputFocused = false
                         }
                     }
                 }
@@ -331,7 +333,7 @@ struct CompanionView: View {
     // MARK: - 历史聊天区（可滚动）
     private var conversationHistoryOverlay: some View {
         Group {
-            if showConversationBubble && !conversations.isEmpty {
+            if (isChatFocusMode || showConversationBubble) && !conversations.isEmpty {
                 VStack {
                     conversationArea
                         .padding(.horizontal, 12)
@@ -339,7 +341,7 @@ struct CompanionView: View {
                         .padding(.bottom, 116)
                 }
                 .transition(.opacity)
-                .allowsHitTesting(false)
+                .allowsHitTesting(isChatFocusMode)
             }
         }
     }
@@ -400,17 +402,28 @@ struct CompanionView: View {
         HStack(spacing: 12) {
             // 文本输入框
             TextField("Have a chat with Luma...", text: $userInput, axis: .vertical)
+                .focused($isInputFocused)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.12), lineWidth: 1)
                 )
                 .foregroundColor(.black.opacity(0.88))
                 .tint(Color(red: 0.46, green: 0.62, blue: 0.32))
                 .lineLimit(1...3)
-                // 不用回车直接发送，避免中文输入法候选未确认时误发。
+                .onChange(of: isInputFocused) { _, focused in
+                    if focused {
+                        withAnimation(.easeInOut) {
+                            isChatFocusMode = true
+                            if !conversations.isEmpty {
+                                showConversationBubble = true
+                            }
+                        }
+                    }
+                }
+            // 不用回车直接发送，避免中文输入法候选未确认时误发。
             
             // 语音输入按钮
             Button(action: toggleVoiceInput) {
@@ -817,11 +830,12 @@ struct CompanionView: View {
                     inputArea
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.clear)
+                .padding(.top, 10)
+                .padding(.bottom, isChatFocusMode ? 18 : 10)
+                .background(isChatFocusMode ? Color.white : Color.clear)
                 .padding(.horizontal)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .padding(.bottom, isChatFocusMode ? 26 : 72)
+                .padding(.bottom, isChatFocusMode ? 0 : 72)
             }
         }
     }
@@ -1214,36 +1228,36 @@ struct ConversationBubbleSimple: View {
                     .foregroundColor(.white)
                     .cornerRadius(18)
                     .frame(maxWidth: .infinity * 0.7, alignment: .trailing)
-            } else {
+            }else {
                 ZStack {
                     Circle()
-                        .stroke(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.65), lineWidth: 5)
+                        .fill(Color.black.opacity(0.94))
                         .frame(width: 30, height: 30)
-                        .blur(radius: 1.2)
+                        .shadow(color: Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.45), radius: 8, x: 0, y: 0)
 
                     Circle()
                         .stroke(
                             AngularGradient(
                                 colors: [
-                                    Color(red: 0.25, green: 0.40, blue: 0.22).opacity(0.55),
-                                    Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.95),
-                                    Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.90),
-                                    Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.85),
-                                    Color(red: 0.25, green: 0.40, blue: 0.22).opacity(0.55)
+                                    Color(red: 0.25, green: 0.40, blue: 0.22),
+                                    Color(red: 0.78, green: 0.90, blue: 0.62),
+                                    Color(red: 0.46, green: 0.62, blue: 0.32),
+                                    Color(red: 0.78, green: 0.90, blue: 0.62),
+                                    Color(red: 0.25, green: 0.40, blue: 0.22)
                                 ],
                                 center: .center
                             ),
                             lineWidth: 2.4
                         )
-                        .frame(width: 24, height: 24)
-                        .shadow(color: Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.28), radius: 4, x: 0, y: 0)
+                        .frame(width: 21, height: 21)
+                        .shadow(color: Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.55), radius: 5, x: 0, y: 0)
 
                     Circle()
-                        .fill(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.85))
-                        .frame(width: 3.5, height: 3.5)
-                        .offset(x: 7, y: -7)
+                        .fill(Color(red: 0.78, green: 0.90, blue: 0.62))
+                        .frame(width: 3.2, height: 3.2)
+                        .offset(x: 6, y: -6)
                 }
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 32)
 
                 Text(conversation.message)
                     .padding(.horizontal, 12)
