@@ -16,8 +16,7 @@ import SwiftUI
 struct CompanionView: View {
     @State private var userInput = ""
     @State private var isListening = false
-    @State private var showHealthSnapshot = false
-    @State private var conversations = Conversation.mockData
+    @State private var conversations: [Conversation] = []
     @State private var lumaEmotion: LumaEmotion = .curious
     @State private var lumaIsThinking = false
     @State private var showInputArea = true
@@ -27,12 +26,6 @@ struct CompanionView: View {
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
     @State private var showMedicalDashboard = false // 显示医疗仪表板
-    @State private var showDigitalTwin = false
-    @State private var showBrainHealth = false
-    @State private var showHeartHealth = false
-    @State private var showHRVHealth = false
-    @State private var showSleepHealth = false
-    @State private var showSettings = false
     @State private var showDigitalTwinView = false
     @State private var showDashboard = false
     @State private var isChatFocusMode = false
@@ -77,9 +70,6 @@ struct CompanionView: View {
                 if !isChatFocusMode {
                     // 全屏Luma角色
                     fullScreenLumaCharacter
-
-                    // 点击空白区域进入聊天专注模式
-                    blankSpaceTapLayer
                 }
                 
                 // 可滚动历史聊天（覆盖在主界面下方）
@@ -96,11 +86,6 @@ struct CompanionView: View {
                 // dashboard
                 if !isChatFocusMode {
                     dashboardButtonBottomLeft
-                }
-                
-                // 健康快照（可展开）
-                if showHealthSnapshot {
-                    healthSnapshotOverlay
                 }
             }
             .sheet(isPresented: $showDashboard) {
@@ -150,24 +135,6 @@ struct CompanionView: View {
                 }
             }
         }
-        .sheet(isPresented: $showDigitalTwin) {
-            DigitalTwinPage()
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
-        .sheet(isPresented: $showBrainHealth) {
-            BrainHealthView()
-        }
-        .sheet(isPresented: $showHeartHealth) {
-            HeartHealthView()
-        }
-        .sheet(isPresented: $showHRVHealth) {
-            HRVHealthView()
-        }
-        .sheet(isPresented: $showSleepHealth) {
-            SleepHealthView()
-        }
         .sheet(isPresented: $showMedicalDashboard) {
             DashboardRedesignView()
         }
@@ -190,7 +157,10 @@ struct CompanionView: View {
                 Button(action: {
                     withAnimation(.spring()) {
                         cycleLumaEmotion()
-                        showInputArea.toggle()
+                        showInputArea = true
+                        if !conversations.isEmpty {
+                            showConversationBubble.toggle()
+                        }
                     }
                 }) {
                     largeScaleLumaCharacter
@@ -202,14 +172,13 @@ struct CompanionView: View {
                     Text(emotionStatusText)
                         .font(.title2)
                         .fontWeight(.semibold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.black.opacity(0.88))
                         .multilineTextAlignment(.center)
                     
-                    Text("Tap me to start the conversation")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .opacity(showInputArea ? 0 : 1)
-                        .animation(.easeInOut, value: showInputArea)
+                    Text("Tap me to start conversation")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.black.opacity(0.48))
                 }
                 .padding(.top, 30)
                 
@@ -224,63 +193,6 @@ struct CompanionView: View {
     private var topControls: some View {
         VStack {
             HStack {
-                // 左上角菜单按钮
-                Menu {
-                    // 主要功能
-                    Section("Main Features") {
-                        Button(action: { showDigitalTwin = true }) {
-                            Label("Digital Twin", systemImage: "figure.stand")
-                        }
-                    }
-                    
-                    // 健康数据
-                    Section("Health Data") {
-                        Button(action: { showMedicalDashboard = true }) {
-                            Label("Medical Dashboard", systemImage: "stethoscope.circle.fill")
-                        }
-                        
-                        Button(action: { showBrainHealth = true }) {
-                            Label("Brain Health", systemImage: "brain.head.profile")
-                        }
-                        
-                        Button(action: { showHeartHealth = true }) {
-                            Label("Heart Health", systemImage: "heart.fill")
-                        }
-
-                        Button(action: { showHRVHealth = true }) {
-                            Label("HRV Health", systemImage: "waveform.path.ecg")
-                        }
-
-                        Button(action: { showSleepHealth = true }) {
-                            Label("Sleep Health", systemImage: "bed.double.fill")
-                        }
-                    }
-                    
-                    // 其他功能
-                    Section("More") {
-                        Button(action: {
-                            withAnimation {
-                                showHealthSnapshot.toggle()
-                            }
-                        }) {
-                            Label("Health Snapshot", systemImage: "chart.line.uptrend.xyaxis")
-                        }
-                        
-                        Button(action: { showSettings = true }) {
-                            Label("Settings", systemImage: "gear")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.9))
-                        )
-                }
-                
                 if isChatFocusMode {
                     Button("Done") {
                         withAnimation(.easeInOut) {
@@ -293,12 +205,18 @@ struct CompanionView: View {
                     Task { await startNewConversation() }
                 } label: {
                     Image(systemName: "plus.bubble.fill")
-                        .font(.title3)
-                        .foregroundColor(.blue)
-                        .frame(width: 36, height: 36)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
+                        .frame(width: 44, height: 44)
                         .background(
                             Circle()
-                                .fill(Color.white.opacity(0.9))
+                                .fill(Color.white.opacity(0.14))
+                                .frame(width: 44, height: 44)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                .frame(width: 44, height: 44)
                         )
                 }
                 
@@ -306,11 +224,17 @@ struct CompanionView: View {
                     showDigitalTwinView = true
                 }) {
                     Image(systemName: "person.crop.circle")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+                        .font(.system(size: 22, weight: .semibold))
+                        .frame(width: 44, height: 44)
+                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
                         .background(
                             Circle()
-                                .fill(Color.white.opacity(0.9))
+                                .fill(Color.white.opacity(0.14))
+                                .frame(width: 44, height: 44)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
                                 .frame(width: 44, height: 44)
                         )
                 }
@@ -320,38 +244,47 @@ struct CompanionView: View {
                 Text("Luma")
                     .font(.title)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.black.opacity(0.88))
                 
                 Spacer()
                 
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     Button(action: {
                         showMedicalDashboard = true
                     }) {
                         Image(systemName: "stethoscope.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.green)
+                            .font(.system(size: 22, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
                             .background(
                                 Circle()
-                                    .fill(Color.white.opacity(0.9))
+                                    .fill(Color.white.opacity(0.14))
+                                    .frame(width: 44, height: 44)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
                                     .frame(width: 44, height: 44)
                             )
                     }
                     .accessibilityLabel("医疗仪表板")
                     .accessibilityHint("查看专业医疗数据和分析报告")
-                    
-                    
 
-                    
                     Button(action: {
                         // 紧急求助
                     }) {
                         Image(systemName: "phone.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.red)
+                            .font(.system(size: 22, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .foregroundColor(Color(red: 0.78, green: 0.36, blue: 0.32))
                             .background(
                                 Circle()
-                                    .fill(Color.white.opacity(0.9))
+                                    .fill(Color.white.opacity(0.14))
+                                    .frame(width: 44, height: 44)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
                                     .frame(width: 44, height: 44)
                             )
                     }
@@ -364,17 +297,6 @@ struct CompanionView: View {
         }
     }
 
-    private var blankSpaceTapLayer: some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    // 空白/Luma 区域点击：触发角色动态交互，不切换到聊天专注模式。
-                    cycleLumaEmotion()
-                    showInputArea = true
-                }
-            }
-    }
     
     private var dashboardButtonBottomLeft: some View {
         VStack {
@@ -386,10 +308,15 @@ struct CompanionView: View {
                 }) {
                     Image(systemName: "slider.horizontal.3")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
                         .background(
                             Circle()
-                                .fill(Color.white.opacity(0.9))
+                                .fill(Color.white.opacity(0.14))
+                                .frame(width: 44, height: 44)
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
                                 .frame(width: 44, height: 44)
                         )
                 }
@@ -404,40 +331,15 @@ struct CompanionView: View {
     // MARK: - 历史聊天区（可滚动）
     private var conversationHistoryOverlay: some View {
         Group {
-            if isChatFocusMode {
+            if showConversationBubble && !conversations.isEmpty {
                 VStack {
                     conversationArea
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                        )
                         .padding(.horizontal, 12)
                         .padding(.top, 88)
                         .padding(.bottom, 116)
                 }
-            } else {
-                VStack {
-                    Spacer()
-                    conversationArea
-                        .frame(maxHeight: 280)
-                        .onTapGesture {
-                            withAnimation(.easeInOut) {
-                                // 点击对话内容进入展开模式，查看更长历史记录。
-                                isChatFocusMode = true
-                                showInputArea = true
-                            }
-                        }
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                        )
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 160)
-                }
+                .transition(.opacity)
+                .allowsHitTesting(false)
             }
         }
     }
@@ -447,15 +349,10 @@ struct CompanionView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 12) {
-                    // 欢迎消息
-                    if conversations.isEmpty {
-                        welcomeMessage
-                    } else {
-                        // 对话记录
-                        ForEach(conversations) { conversation in
-                            ConversationBubbleSimple(conversation: conversation)
-                                .id(conversation.id)
-                        }
+                    // 对话记录
+                    ForEach(conversations) { conversation in
+                        ConversationBubbleSimple(conversation: conversation)
+                            .id(conversation.id)
                     }
                     
                     if isAwaitingAIReply {
@@ -478,6 +375,7 @@ struct CompanionView: View {
                 .padding(.horizontal)
                 .padding(.vertical, 8)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: conversations.count) { _ in
                 withAnimation(.easeOut(duration: 0.25)) {
                     proxy.scrollTo("conversation-bottom", anchor: .bottom)
@@ -492,57 +390,9 @@ struct CompanionView: View {
                 proxy.scrollTo("conversation-bottom", anchor: .bottom)
             }
         }
-        .background(Color(.systemBackground))
+        .background(Color.clear)
     }
     
-    // MARK: - 健康快照卡片
-    private var healthSnapshotCard: some View {
-        let healthData = HealthData.mock
-        
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Today's Health Overview")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-                Text(Date().formatted(.dateTime.month().day()))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            HStack(spacing: 20) {
-                HealthMetricSimple(
-                    icon: "heart.fill",
-                    value: "\(healthData.heartRate)",
-                    unit: "bpm",
-                    color: .red
-                )
-                
-                HealthMetricSimple(
-                    icon: "figure.walk",
-                    value: "\(healthData.stepCount)",
-                    unit: "步",
-                    color: .green
-                )
-                
-                HealthMetricSimple(
-                    icon: "moon.fill",
-                    value: String(format: "%.1f", healthData.sleepHours),
-                    unit: "小时",
-                    color: .purple
-                )
-            }
-            
-            Text("Your condition is great today, keep it up!")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.top, 8)
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-        .padding(.horizontal)
-    }
     
     // MARK: - 输入区域
     private var inputArea: some View {
@@ -550,21 +400,26 @@ struct CompanionView: View {
         HStack(spacing: 12) {
             // 文本输入框
             TextField("Have a chat with Luma...", text: $userInput, axis: .vertical)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                )
+                .foregroundColor(.black.opacity(0.88))
+                .tint(Color(red: 0.46, green: 0.62, blue: 0.32))
                 .lineLimit(1...3)
                 // 不用回车直接发送，避免中文输入法候选未确认时误发。
             
             // 语音输入按钮
             Button(action: toggleVoiceInput) {
-                Circle()
-                    .fill(isListening ? Color.red : Color.blue)
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(isListening ? Color(red: 0.78, green: 0.36, blue: 0.32) : Color(red: 0.78, green: 0.90, blue: 0.62))
                     .frame(width: 44, height: 44)
-                    .overlay(
-                        Image(systemName: "mic.fill")
-                            .foregroundColor(.white)
-                            .font(.system(size: 18))
-                    )
-                    .scaleEffect(isListening ? 1.2 : 1.0)
+                    .background(Color.clear)
+                    .scaleEffect(isListening ? 1.08 : 1.0)
                     .animation(.easeInOut(duration: 0.5), value: isListening)
             }
             
@@ -582,55 +437,18 @@ struct CompanionView: View {
     
     // MARK: - 欢迎消息
     private var welcomeMessage: some View {
-        VStack(spacing: 15) {
-            Text("Let's start our conversation!")
-                .font(.headline)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
-            
-            Text("You can chat with me about health, mood, or anything else you'd like to share")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
-                .lineLimit(2)
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.blue.opacity(0.1))
-        )
-        .padding(.horizontal)
+        Text("Tap me to start conversation")
+            .font(.caption)
+            .fontWeight(.medium)
+            .foregroundColor(.black.opacity(0.48))
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
     }
     
-    // MARK: - 快速回复建议
-    private var quickReplySuggestions: some View {
-        let suggestions = ["I feel pretty good", "A little bit tired", "I'm very energetic today", "The pressure is a little high", "I need a break"]
-        
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(suggestions, id: \.self) { suggestion in
-                    Button(suggestion) {
-                        userInput = suggestion
-                        sendMessage()
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(15)
-                    .font(.caption)
-                }
-            }
-            .padding(.horizontal)
-        }
-    }
     
     // MARK: - 背景渐变
     private var backgroundGradient: some View {
-        LinearGradient(
-            colors: [Color.blue.opacity(0.05), Color.purple.opacity(0.05)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        Color.white
     }
 
     private func riskAlertBanner(alert: RiskAlertItem) -> some View {
@@ -692,7 +510,7 @@ struct CompanionView: View {
         
         withAnimation {
             conversations.append(userMessage)
-            showConversationBubble = false
+            showConversationBubble = true
         }
         StorageManager.shared.saveMessage(userMessage)
         Task {
@@ -758,11 +576,9 @@ struct CompanionView: View {
             lumaEmotion = .curious
         }
         
-        // 显示用户消息气泡
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation {
-                showConversationBubble = true
-            }
+        // Keep chat bubbles visible after sending. Users can tap the orb to hide/show them.
+        withAnimation {
+            showConversationBubble = true
         }
     }
     
@@ -816,6 +632,7 @@ struct CompanionView: View {
                 activeRiskAlert = nil
                 isAwaitingAIReply = false
                 showInputArea = true
+                showConversationBubble = false
                 isChatFocusMode = false
                 applySafetyInteraction(for: nil)
             }
@@ -850,42 +667,8 @@ struct CompanionView: View {
     
     // MARK: - 超大尺寸Luma角色
     private var largeScaleLumaCharacter: some View {
-        ZStack {
-            // 角色主体（梨形身体）
-            VStack(spacing: -20) {
-                // 头部（放大版）
-                largeScaleLumaHead
-                
-                // 身体（放大版）
-                largeScaleLumaBody
-            }
-            .scaleEffect(lumaIsThinking ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: lumaIsThinking)
-            if isDozing {
-                ZzzOverlay()
-                    .offset(x: 60, y: -140)
-            }
-        }
-        .frame(height: 400)
-        // 开心：上下弹跳（仅在happy时）
-        .offset(y: (lumaEmotion == .happy && isBouncing) ? -20 : 0)
-        .animation((lumaEmotion == .happy && isBouncing) ? .spring(response: 0.6, dampingFraction: 0.4).repeatForever(autoreverses: true) : .default, value: isBouncing)
-        .onAppear {
-            lumaIsThinking = true
-            // 根据初始情绪设置动画状态
-            switch lumaEmotion {
-            case .happy:
-                isBouncing = true
-                armsUp = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    armWave = true
-                }
-            case .tired:
-                isDozing = true
-            case .sad, .curious:
-                break // 保持默认状态
-            }
-        }
+        LumaOrbCharacter(emotion: lumaEmotion)
+            .frame(width: 280, height: 280)
     }
     
     // MARK: - 浮动对话气泡
@@ -1030,35 +813,19 @@ struct CompanionView: View {
             
             if showInputArea {
                 VStack(spacing: 15) {
-                    // 快速回复建议
-                    quickReplySuggestions
-                    
                     // 输入框
                     inputArea
                 }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: -2)
-                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.clear)
                 .padding(.horizontal)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-                .padding(.bottom, isChatFocusMode ? 8 : 48)
+                .padding(.bottom, isChatFocusMode ? 26 : 72)
             }
         }
     }
     
-    // MARK: - 健康快照覆盖层
-    private var healthSnapshotOverlay: some View {
-        VStack {
-            Spacer()
-            
-            healthSnapshotCard
-                .padding()
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-    }
     
     // MARK: - 放大版Luma头部
     private var largeScaleLumaHead: some View {
@@ -1448,25 +1215,146 @@ struct ConversationBubbleSimple: View {
                     .cornerRadius(18)
                     .frame(maxWidth: .infinity * 0.7, alignment: .trailing)
             } else {
-                Circle()
-                    .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 30, height: 30)
-                    .overlay(
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white)
-                    )
-                
+                ZStack {
+                    Circle()
+                        .stroke(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.65), lineWidth: 5)
+                        .frame(width: 30, height: 30)
+                        .blur(radius: 1.2)
+
+                    Circle()
+                        .stroke(
+                            AngularGradient(
+                                colors: [
+                                    Color(red: 0.25, green: 0.40, blue: 0.22).opacity(0.55),
+                                    Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.95),
+                                    Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.90),
+                                    Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.85),
+                                    Color(red: 0.25, green: 0.40, blue: 0.22).opacity(0.55)
+                                ],
+                                center: .center
+                            ),
+                            lineWidth: 2.4
+                        )
+                        .frame(width: 24, height: 24)
+                        .shadow(color: Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.28), radius: 4, x: 0, y: 0)
+
+                    Circle()
+                        .fill(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.85))
+                        .frame(width: 3.5, height: 3.5)
+                        .offset(x: 7, y: -7)
+                }
+                .frame(width: 30, height: 30)
+
                 Text(conversation.message)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(18)
+                    .background(Color.white.opacity(0.95))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
                     .frame(maxWidth: .infinity * 0.7, alignment: .leading)
-                
                 Spacer()
             }
         }
+    }
+}
+
+// MARK: - High-tech glowing orb character
+struct LumaOrbCharacter: View {
+    let emotion: LumaEmotion
+
+    private var accentColor: Color {
+        Color(red: 0.46, green: 0.62, blue: 0.32)
+    }
+
+    private var lightGreen: Color {
+        Color(red: 0.78, green: 0.90, blue: 0.62)
+    }
+
+    private var deepGreen: Color {
+        Color(red: 0.25, green: 0.40, blue: 0.22)
+    }
+
+    var body: some View {
+        ZStack {
+            // Outer soft glow, tinted by emotion but still mostly white.
+            Circle()
+                .stroke(lightGreen.opacity(0.18), lineWidth: 22)
+                .frame(width: 228, height: 228)
+                .blur(radius: 22)
+
+            // Main white luminous ring, inspired by an eclipse-like orb.
+            Circle()
+                .stroke(
+                    AngularGradient(
+                        colors: [
+                            deepGreen.opacity(0.42),
+                            lightGreen.opacity(0.78),
+                            accentColor.opacity(0.82),
+                            lightGreen.opacity(0.88),
+                            deepGreen.opacity(0.46)
+                        ],
+                        center: .center
+                    ),
+                    lineWidth: 4.2
+                )
+                .frame(width: 220, height: 220)
+                .shadow(color: lightGreen.opacity(0.36), radius: 9, x: 0, y: 0)
+                .shadow(color: accentColor.opacity(0.30), radius: 14, x: 0, y: 0)
+
+            // Very subtle inner haze; no solid background fill.
+            Circle()
+                .stroke(lightGreen.opacity(0.16), lineWidth: 18)
+                .frame(width: 194, height: 194)
+                .blur(radius: 18)
+
+            // Small highlight on the rim.
+            Circle()
+                .fill(lightGreen.opacity(0.86))
+                .frame(width: 10, height: 10)
+                .blur(radius: 1.2)
+                .offset(x: 72, y: -72)
+                .shadow(color: lightGreen.opacity(0.46), radius: 10, x: 0, y: 0)
+                .shadow(color: accentColor.opacity(0.40), radius: 16, x: 0, y: 0)
+
+            // Sparse particles around the ring.
+            ForEach(0..<10, id: \.self) { index in
+                let angle = Double(index) / 10.0 * 360.0 + 14.0
+                let radius = CGFloat(105 + (index % 3) * 6)
+                Circle()
+                    .fill((index % 2 == 0 ? lightGreen : accentColor).opacity(index % 2 == 0 ? 0.58 : 0.38))
+                    .frame(width: CGFloat(index % 2 == 0 ? 3 : 2), height: CGFloat(index % 2 == 0 ? 3 : 2))
+                    .offset(x: cos(angle * .pi / 180) * radius, y: sin(angle * .pi / 180) * radius)
+                    .shadow(color: accentColor.opacity(0.45), radius: 5, x: 0, y: 0)
+            }
+
+        }
+        .frame(width: 280, height: 280)
+    }
+}
+
+struct OrbLooseArc: Shape {
+    let width: CGFloat
+    let height: CGFloat
+    let rotation: Double
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let arcRect = CGRect(
+            x: center.x - width / 2,
+            y: center.y - height / 2,
+            width: width,
+            height: height
+        )
+
+        path.addEllipse(in: arcRect)
+        return path.applying(CGAffineTransform(translationX: -center.x, y: -center.y))
+            .applying(CGAffineTransform(rotationAngle: rotation * .pi / 180))
+            .applying(CGAffineTransform(translationX: center.x, y: center.y))
     }
 }
 
