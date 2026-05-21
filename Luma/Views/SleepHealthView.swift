@@ -46,23 +46,14 @@ struct SleepHealthView: View {
                                 .padding(.horizontal, 2)
                         }
 
-                        Button {
+                        PressableDimRefreshControl(
+                            title: isLoading ? "Refreshing..." : "Refresh from Apple Watch",
+                            tint: .purple,
+                            isLoading: isLoading,
+                            isDisabled: isLoading
+                        ) {
                             fetchLatestSleep()
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isLoading {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                }
-                                Text(isLoading ? "Refreshing..." : "Refresh from Apple Watch")
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
                         }
-                        .disabled(isLoading)
-                        .buttonStyle(.borderedProminent)
-                        .tint(.purple)
 
                         healthTipCard
 
@@ -337,6 +328,52 @@ private struct SleepTrendPoint: Identifiable {
     let id = UUID()
     let label: String
     let hours: Double
+}
+
+
+private struct PressableDimRefreshControl: View {
+    let title: String
+    let tint: Color
+    let isLoading: Bool
+    let isDisabled: Bool
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+            }
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint.opacity(isPressed ? 0.68 : 1.0))
+        )
+        .opacity(isDisabled ? 0.55 : (isPressed ? 0.82 : 1.0))
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, state, _ in
+                    if !isDisabled {
+                        state = true
+                    }
+                }
+                .onEnded { _ in
+                    guard !isDisabled else { return }
+                    action()
+                }
+        )
+        .animation(nil, value: isPressed)
+    }
 }
 
 #Preview {

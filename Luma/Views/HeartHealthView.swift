@@ -21,127 +21,115 @@ struct HeartHealthView: View {
     @State private var heartRateChartData: [HeartRateChartPoint] = []
     private let gutter: CGFloat = 10
     private let healthStore = HKHealthStore()
+
+    private var isRunningInPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
     var body: some View {
+        VStack(spacing: 0) {
+            header
+
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        TopBadgeIcon(symbol: "heart.fill", color: .orange)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
+
+                        summaryCards
+
+                        heartRateTrendSection
+
+                        if let heartRateError {
+                            Text(heartRateError)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 2)
+                        }
+
+                        PressableDimRefreshControl(
+                            title: isLoadingHeartRate ? "Refreshing..." : "Refresh from Apple Watch",
+                            tint: .orange,
+                            isLoading: isLoadingHeartRate,
+                            isDisabled: isLoadingHeartRate
+                        ) {
+                            fetchLatestHeartRate()
+                        }
+
+                        healthTipCard
+
+                        Color.clear.frame(height: 40)
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+        }
+        .background(Color(.systemBackground))
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onAppear {
+            if isRunningInPreview {
+                loadPreviewData()
+            } else {
+                fetchLatestHeartRate()
+            }
+        }
+    }
+
+    private var header: some View {
         HStack {
             Text("Your Health Manager")
                 .font(.headline)
-                .padding(.horizontal,gutter)
-            Spacer()
-            Button {
-                print("🔔 Notification tapped")
-            } label: {
-                Image(systemName: "bell.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.orange)
-            }
-            .buttonStyle(.plain)
+                .padding(.horizontal, gutter)
 
-            // Avatar placeholder
-            Circle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 32, height: 32)
-                .overlay(Image(systemName: "person.fill").font(.caption))
-                .padding(.horizontal,gutter)
+            Spacer()
+                .padding(.trailing, gutter)
         }
         .padding(.top, 8)
-        ZStack(alignment: .bottom) {
-            
-            // Scrollable content
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+        .padding(.bottom, 4)
+    }
 
-                    TopBadgeIcon(symbol: "stethoscope", color: .orange)
-                        .frame(maxWidth: .infinity)
+    private var summaryCards: some View {
+        HStack(spacing: 12) {
+            FlatStatCard(
+                title: "Heart Rate",
+                value: heartRateDisplayText,
+                tint: .orange
+            )
 
-                    // cards
-                    HStack(spacing: 12) {
-                        FlatStatCard(
-                            title: "Heart Rate",
-                            value: heartRateDisplayText,
-                            tint: .orange
-                        )
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Source")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Source")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Text("Apple Watch")
-                                .font(.headline)
-                                .bold()
-                                .foregroundColor(.orange)
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
-                    }
-
-                    heartRateTrendSection
-
-                    if let latestHeartRateTime {
-                        Text("Last updated: \(latestHeartRateTime.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let heartRateError {
-                        Text(heartRateError)
-                            .font(.footnote)
-                            .foregroundColor(.red)
-                    }
-
-                    Button {
-                        fetchLatestHeartRate()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoadingHeartRate {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                            }
-                            Text(isLoadingHeartRate ? "Refreshing..." : "Refresh from Apple Watch")
-                                .font(.subheadline.weight(.semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                    }
-                    .disabled(isLoadingHeartRate)
-                    .buttonStyle(.borderedProminent)
-                    
-                    // ✅ Health Tip card
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Health Tip")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text(healthTip)
-                            .foregroundColor(.primary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
-
-                    // Spacer to avoid overlap with floating button
-                    Color.clear.frame(height: 120)
-                }
-                .padding(.horizontal, 16)
+                Text("Apple Watch")
+                    .font(.headline)
+                    .bold()
+                    .foregroundColor(.orange)
             }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
+        }
+    }
 
-            // Floating voice button (fixed at bottom-center)
-            LongPressVoiceButton(isListening: $isListening,
-                                 color: .orange,
-                                 minDuration: 0.5,
-                                 baseDiameter: 64,
-                                 ringCount: 3) {
-                // ✅ Action after long-press threshold (start voice recognition, etc.)
-                print("🎙️ Long press recognized, start voice...")
-            }
-            .padding(.bottom, 22) // Leave space for the Home indicator
+    private var healthTipCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Health Tip")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+            Text(heartRateTipText)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        // Keep bottom button visible when keyboard appears
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onAppear {
-            fetchLatestHeartRate()
-        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private var heartRateDisplayText: String {
@@ -149,21 +137,35 @@ struct HeartHealthView: View {
         return String(format: "%.0f bpm", latestHeartRateBPM)
     }
 
-    private var heartRateTrendSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Heart Rate Trend")
-                        .font(.headline)
-                    Text("View your heart-rate records by day, week, or month.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+    private var heartRateTipText: String {
+        guard let latestHeartRateBPM else {
+            return "Wear your Apple Watch consistently to generate heart-rate insights."
+        }
 
-                Spacer()
+        if latestHeartRateBPM < 50 {
+            return "Your heart rate looks lower than usual. If you feel dizzy or unwell, consider seeking medical advice."
+        }
+
+        if latestHeartRateBPM > 110 {
+            return "Your heart rate looks elevated. Try resting, hydrating, and checking again later."
+        }
+
+        return "Your heart rate looks stable. Keep your Apple Watch snug for reliable readings."
+    }
+
+    private var heartRateTrendSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Heart Rate Trend")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Text("View your heart-rate records by day, week, or month.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
-            Picker("Range", selection: $selectedRange) {
+            Picker("Heart-rate range", selection: $selectedRange) {
                 ForEach(HeartRateChartRange.allCases) { range in
                     Text(range.title).tag(range)
                 }
@@ -173,31 +175,128 @@ struct HeartHealthView: View {
                 fetchHeartRateChartData()
             }
 
-            if heartRateChartData.isEmpty {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .frame(height: 220)
-                    .overlay(
+            VStack(spacing: 8) {
+                if heartRateChartData.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "chart.bar.xaxis")
+                            .font(.title2)
+                            .foregroundColor(.secondary.opacity(0.7))
+
                         Text("No heart-rate trend data available yet.")
                             .font(.footnote)
                             .foregroundColor(.secondary)
-                    )
-            } else {
-                Chart(heartRateChartData) { point in
-                    LineMark(
-                        x: .value("Time", point.date),
-                        y: .value("Heart Rate", point.bpm)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(Color.orange)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    heartRateBarChart
                 }
-                .chartYAxisLabel("bpm")
-                .frame(height: 220)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
+
+                if let latestHeartRateTime {
+                    Text("Last updated: \(latestHeartRateTime.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 220)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
+        }
+    }
+
+    private var heartRateBarChart: some View {
+        let maxValue = max(heartRateChartData.map(\.bpm).max() ?? 120, 120)
+        let displayPoints = compactedHeartRateChartData
+
+        return HStack(alignment: .bottom, spacing: selectedRange == .month ? 4 : 10) {
+            ForEach(displayPoints) { point in
+                VStack(spacing: 6) {
+                    Text(String(format: "%.0f", point.bpm))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.orange)
+                        .lineLimit(1)
+
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.orange.opacity(0.85), Color.orange.opacity(0.28)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(height: max(18, CGFloat(point.bpm / maxValue) * 108))
+
+                    Text(chartLabel(for: point.date))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
+    }
+
+    private var compactedHeartRateChartData: [HeartRateChartPoint] {
+        switch selectedRange {
+        case .day:
+            return Array(heartRateChartData.suffix(6))
+        case .week:
+            return compactChartData(targetCount: 7)
+        case .month:
+            return compactChartData(targetCount: 4)
+        }
+    }
+
+    private func compactChartData(targetCount: Int) -> [HeartRateChartPoint] {
+        guard heartRateChartData.count > targetCount else { return heartRateChartData }
+
+        let chunkSize = Double(heartRateChartData.count) / Double(targetCount)
+        return (0..<targetCount).compactMap { index in
+            let start = Int(Double(index) * chunkSize)
+            let end = min(Int(Double(index + 1) * chunkSize), heartRateChartData.count)
+            let chunk = Array(heartRateChartData[start..<max(start + 1, end)])
+            guard let representative = chunk.last else { return nil }
+            let average = chunk.map(\.bpm).reduce(0, +) / Double(chunk.count)
+            return HeartRateChartPoint(date: representative.date, bpm: average)
+        }
+    }
+
+    private func chartLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+
+        switch selectedRange {
+        case .day:
+            formatter.dateFormat = "ha"
+        case .week:
+            formatter.dateFormat = "E"
+        case .month:
+            formatter.dateFormat = "M/d"
+        }
+
+        return formatter.string(from: date)
+    }
+
+    private func loadPreviewData() {
+        latestHeartRateBPM = 78
+        latestHeartRateTime = Date()
+        heartRateError = nil
+        isLoadingHeartRate = false
+
+        let now = Date()
+        heartRateChartData = [
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60 * 6), bpm: 72),
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60 * 5), bpm: 76),
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60 * 4), bpm: 80),
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60 * 3), bpm: 74),
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60 * 2), bpm: 82),
+            HeartRateChartPoint(date: now.addingTimeInterval(-60 * 60), bpm: 78)
+        ]
     }
 
     private func fetchHeartRateChartData() {
@@ -567,4 +666,50 @@ private struct HeartRateChartPoint: Identifiable {
     let id = UUID()
     let date: Date
     let bpm: Double
+}
+
+// Custom refresh control for new design
+private struct PressableDimRefreshControl: View {
+    let title: String
+    let tint: Color
+    let isLoading: Bool
+    let isDisabled: Bool
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+            }
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint.opacity(isPressed ? 0.68 : 1.0))
+        )
+        .opacity(isDisabled ? 0.55 : (isPressed ? 0.82 : 1.0))
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, state, _ in
+                    if !isDisabled {
+                        state = true
+                    }
+                }
+                .onEnded { _ in
+                    guard !isDisabled else { return }
+                    action()
+                }
+        )
+        .animation(nil, value: isPressed)
+    }
 }

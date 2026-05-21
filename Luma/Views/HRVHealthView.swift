@@ -43,23 +43,14 @@ struct HRVHealthView: View {
                                 .padding(.horizontal, 2)
                         }
 
-                        Button {
+                        PressableDimRefreshControl(
+                            title: isLoading ? "Refreshing..." : "Refresh from Apple Watch",
+                            tint: .green,
+                            isLoading: isLoading,
+                            isDisabled: isLoading
+                        ) {
                             fetchLatestHRV()
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isLoading {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                }
-                                Text(isLoading ? "Refreshing..." : "Refresh from Apple Watch")
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
                         }
-                        .disabled(isLoading)
-                        .buttonStyle(.borderedProminent)
-                        .tint(.green)
 
                         healthTipCard
 
@@ -204,22 +195,7 @@ struct HRVHealthView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    Chart(hrvChartData) { point in
-                        LineMark(
-                            x: .value("Time", point.date),
-                            y: .value("HRV", point.value)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(Color.green)
-                    }
-                    .chartYAxisLabel("ms")
-                    .chartXAxis {
-                        AxisMarks(values: .automatic(desiredCount: selectedRange == .day ? 4 : 6))
-                    }
-                    .chartYAxis {
-                        AxisMarks(position: .leading)
-                    }
-                    .padding(12)
+                    hrvBarChart
                 }
 
                 if let latestUpdateTime {
@@ -233,6 +209,83 @@ struct HRVHealthView: View {
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
         }
+    }
+
+    private var hrvBarChart: some View {
+        let maxValue = max(hrvChartData.map(\.value).max() ?? 60, 60)
+        let displayPoints = compactedHRVChartData
+
+        return HStack(alignment: .bottom, spacing: selectedRange == .month ? 4 : 10) {
+            ForEach(displayPoints) { point in
+                VStack(spacing: 6) {
+                    Text(String(format: "%.0f", point.value))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.green)
+                        .lineLimit(1)
+
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.green.opacity(0.85), Color.green.opacity(0.28)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(height: max(18, CGFloat(point.value / maxValue) * 108))
+
+                    Text(chartLabel(for: point.date))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
+    }
+
+    private var compactedHRVChartData: [HRVChartPoint] {
+        switch selectedRange {
+        case .day:
+            return Array(hrvChartData.suffix(6))
+        case .week:
+            return compactChartData(targetCount: 7)
+        case .month:
+            return compactChartData(targetCount: 4)
+        }
+    }
+
+    private func compactChartData(targetCount: Int) -> [HRVChartPoint] {
+        guard hrvChartData.count > targetCount else { return hrvChartData }
+
+        let chunkSize = Double(hrvChartData.count) / Double(targetCount)
+        return (0..<targetCount).compactMap { index in
+            let start = Int(Double(index) * chunkSize)
+            let end = min(Int(Double(index + 1) * chunkSize), hrvChartData.count)
+            let chunk = Array(hrvChartData[start..<max(start + 1, end)])
+            guard let representative = chunk.last else { return nil }
+            let average = chunk.map(\.value).reduce(0, +) / Double(chunk.count)
+            return HRVChartPoint(date: representative.date, value: average)
+        }
+    }
+
+    private func chartLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+
+        switch selectedRange {
+        case .day:
+            formatter.dateFormat = "ha"
+        case .week:
+            formatter.dateFormat = "E"
+        case .month:
+            formatter.dateFormat = "M/d"
+        }
+
+        return formatter.string(from: date)
     }
 
     private func loadPreviewData() {
@@ -339,6 +392,52 @@ private struct HRVChartPoint: Identifiable {
     let value: Double
 }
 
+private struct PressableDimRefreshControl: View {
+    let title: String
+    let tint: Color
+    let isLoading: Bool
+    let isDisabled: Bool
+    let action: () -> Void
+
+    @GestureState private var isPressed = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+            }
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tint.opacity(isPressed ? 0.68 : 1.0))
+        )
+        .opacity(isDisabled ? 0.55 : (isPressed ? 0.82 : 1.0))
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, state, _ in
+                    if !isDisabled {
+                        state = true
+                    }
+                }
+                .onEnded { _ in
+                    guard !isDisabled else { return }
+                    action()
+                }
+        )
+        .animation(nil, value: isPressed)
+    }
+}
+
 #Preview {
     HRVHealthView()
 }
+
