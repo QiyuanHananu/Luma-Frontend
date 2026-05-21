@@ -25,9 +25,7 @@ struct CompanionView: View {
     @State private var isDozing = false
     @State private var armsUp = false // Happy时举手
     @State private var armWave = false // 手臂摆动
-    @State private var showMedicalDashboard = false // 显示医疗仪表板
     @State private var showDigitalTwinView = false
-    @State private var showDashboard = false
     @State private var isChatFocusMode = false
     @State private var activeRiskAlert: RiskAlertItem?
     @State private var isAwaitingAIReply = false
@@ -84,15 +82,8 @@ struct CompanionView: View {
                 // 底部输入区域（可隐藏）
                 bottomInputArea
                 
-                // dashboard
-                if !isChatFocusMode {
-                    dashboardButtonBottomLeft
-                }
             }
-            .sheet(isPresented: $showDashboard) {
-                    DashboardView()
-                        .presentationDetents([.medium])
-                }
+            
             .navigationDestination(isPresented: $showDigitalTwinView) {
                         DigitalTwinPage()
                     }
@@ -135,9 +126,6 @@ struct CompanionView: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $showMedicalDashboard) {
-            DashboardRedesignView()
         }
         .onAppear {
             conversations = StorageManager.shared.loadCurrentSession()
@@ -193,68 +181,50 @@ struct CompanionView: View {
     // MARK: - 顶部控制按钮
     private var topControls: some View {
         VStack {
-            HStack {
-                if isChatFocusMode {
-                    Button("Done") {
-                        withAnimation(.easeInOut) {
-                            isChatFocusMode = false
-                            isInputFocused = false
-                        }
-                    }
-                }
-
-                Button {
-                    Task { await startNewConversation() }
-                } label: {
-                    Image(systemName: "plus.bubble.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.14))
-                                .frame(width: 44, height: 44)
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                .frame(width: 44, height: 44)
-                        )
-                }
-                
-                Button(action: {
-                    showDigitalTwinView = true
-                }) {
-                    Image(systemName: "person.crop.circle")
-                        .font(.system(size: 22, weight: .semibold))
-                        .frame(width: 44, height: 44)
-                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.14))
-                                .frame(width: 44, height: 44)
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                .frame(width: 44, height: 44)
-                        )
-                }
-                
-                Spacer()
-                
+            ZStack {
                 Text("Luma")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.black.opacity(0.88))
-                
-                Spacer()
-                
-                HStack(spacing: 10) {
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                HStack {
+                    if isChatFocusMode {
+                        Button("Done") {
+                            withAnimation(.easeInOut) {
+                                isChatFocusMode = false
+                                isInputFocused = false
+                                showConversationBubble = !conversations.isEmpty
+                            }
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
+                    }
+
+                    Button {
+                        Task { await startNewConversation() }
+                    } label: {
+                        Image(systemName: "plus.bubble.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(Color.white.opacity(0.14))
+                                    .frame(width: 44, height: 44)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                                    .frame(width: 44, height: 44)
+                            )
+                    }
+                    .accessibilityLabel("Start new conversation")
+
                     Button(action: {
-                        showMedicalDashboard = true
+                        showDigitalTwinView = true
                     }) {
-                        Image(systemName: "stethoscope.circle.fill")
+                        Image(systemName: "person.crop.circle")
                             .font(.system(size: 22, weight: .semibold))
                             .frame(width: 44, height: 44)
                             .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
@@ -265,70 +235,23 @@ struct CompanionView: View {
                             )
                             .overlay(
                                 Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
                                     .frame(width: 44, height: 44)
                             )
                     }
-                    .accessibilityLabel("医疗仪表板")
-                    .accessibilityHint("查看专业医疗数据和分析报告")
+                    .accessibilityLabel("Open Digital Twin")
 
-                    Button(action: {
-                        // 紧急求助
-                    }) {
-                        Image(systemName: "phone.circle.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                            .foregroundColor(Color(red: 0.78, green: 0.36, blue: 0.32))
-                            .background(
-                                Circle()
-                                    .fill(Color.white.opacity(0.14))
-                                    .frame(width: 44, height: 44)
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                    .frame(width: 44, height: 44)
-                            )
-                    }
+                    Spacer()
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
-            
+
             Spacer()
         }
     }
 
     
-    private var dashboardButtonBottomLeft: some View {
-        VStack {
-            Spacer()
-
-            HStack {
-                Button(action: {
-                    showDashboard = true
-                }) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.title2)
-                        .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.14))
-                                .frame(width: 44, height: 44)
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                                .frame(width: 44, height: 44)
-                        )
-                }
-                .padding(.leading, 16)
-                .padding(.bottom, 20)
-
-                Spacer()
-            }
-        }
-    }
 
     // MARK: - 历史聊天区（可滚动）
     private var conversationHistoryOverlay: some View {
@@ -338,7 +261,7 @@ struct CompanionView: View {
                     conversationArea
                         .padding(.horizontal, 12)
                         .padding(.top, 88)
-                        .padding(.bottom, 116)
+                        .padding(.bottom, isChatFocusMode ? 96 : 116)
                 }
                 .transition(.opacity)
                 .allowsHitTesting(isChatFocusMode)
@@ -567,9 +490,11 @@ struct CompanionView: View {
             }
         }
         
-        // 隐藏输入区域
-        withAnimation(.spring()) {
-            showInputArea = false
+        // Enter chat mode and keep the input available for continuous conversation.
+        withAnimation(.easeInOut) {
+            isChatFocusMode = true
+            showInputArea = true
+            showConversationBubble = true
         }
         
         // 关键词触发情绪（happy/sad/tired）
@@ -632,33 +557,17 @@ struct CompanionView: View {
     }
 
     private func startNewConversation() async {
-        do {
-            let _: NewChatSessionResponse = try await APIClient.shared.request(
-                path: "/api/chat/new-session/",
-                method: "POST",
-                body: Optional<Int>.none,
-                requiresAuth: true
-            )
-            await MainActor.run {
-                StorageManager.shared.clearCurrentSession()
-                conversations = []
-                activeRiskAlert = nil
-                isAwaitingAIReply = false
-                showInputArea = true
-                showConversationBubble = false
-                isChatFocusMode = false
-                applySafetyInteraction(for: nil)
-            }
-        } catch {
-            let fallback = Conversation(
-                message: "Could not start a new session right now. Please try again.",
-                isFromUser: false,
-                timestamp: Date()
-            )
-            await MainActor.run {
-                conversations.append(fallback)
-                StorageManager.shared.saveMessage(fallback)
-            }
+        await MainActor.run {
+            StorageManager.shared.clearCurrentSession()
+            conversations = []
+            activeRiskAlert = nil
+            isAwaitingAIReply = false
+            userInput = ""
+            showInputArea = true
+            showConversationBubble = false
+            isChatFocusMode = false
+            isInputFocused = true
+            applySafetyInteraction(for: nil)
         }
     }
     
@@ -1228,7 +1137,7 @@ struct ConversationBubbleSimple: View {
                     .foregroundColor(.white)
                     .cornerRadius(18)
                     .frame(maxWidth: .infinity * 0.7, alignment: .trailing)
-            }else {
+            } else {
                 ZStack {
                     Circle()
                         .fill(Color.black.opacity(0.94))
