@@ -12,7 +12,7 @@ import HealthKit
 // MARK: - Main page
 struct HeartHealthView: View {
     @State private var isListening = false
-    @State private var healthTip = "Keep your Apple Watch snug on wrist for reliable heart-rate sampling."
+    @State private var healthTip = "Loading personalized health tip..."
     @State private var latestHeartRateBPM: Double?
     @State private var latestHeartRateTime: Date?
     @State private var isLoadingHeartRate = false
@@ -121,7 +121,7 @@ struct HeartHealthView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
 
-            Text(heartRateTipText)
+            Text(healthTip)
                 .font(.body)
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -137,21 +137,6 @@ struct HeartHealthView: View {
         return String(format: "%.0f bpm", latestHeartRateBPM)
     }
 
-    private var heartRateTipText: String {
-        guard let latestHeartRateBPM else {
-            return "Wear your Apple Watch consistently to generate heart-rate insights."
-        }
-
-        if latestHeartRateBPM < 50 {
-            return "Your heart rate looks lower than usual. If you feel dizzy or unwell, consider seeking medical advice."
-        }
-
-        if latestHeartRateBPM > 110 {
-            return "Your heart rate looks elevated. Try resting, hydrating, and checking again later."
-        }
-
-        return "Your heart rate looks stable. Keep your Apple Watch snug for reliable readings."
-    }
 
     private var heartRateTrendSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -287,6 +272,7 @@ struct HeartHealthView: View {
         latestHeartRateTime = Date()
         heartRateError = nil
         isLoadingHeartRate = false
+        healthTip = "Your heart rate looks stable. Keep your Apple Watch snug for reliable readings."
 
         let now = Date()
         heartRateChartData = [
@@ -401,6 +387,7 @@ struct HeartHealthView: View {
                     latestHeartRateBPM = nil
                     latestHeartRateTime = nil
                     heartRateError = "No Apple Watch heart-rate sample found yet. Open Health app and grant Heart Rate read permission."
+                    healthTip = "Wear your Apple Watch consistently to generate heart-rate insights."
                     fetchHeartRateChartData()
                     return
                 }
@@ -408,6 +395,10 @@ struct HeartHealthView: View {
                 latestHeartRateBPM = reading.bpm
                 latestHeartRateTime = reading.endDate
                 fetchHeartRateChartData()
+                healthTip = "Generating personalized health tip..."
+                Task {
+                    await updateHealthTip(for: reading.bpm)
+                }
 
                 Task {
                     await HealthMetricsService.shared.uploadHeartRate(
@@ -418,6 +409,74 @@ struct HeartHealthView: View {
             }
         }
     }
+
+    private func updateHealthTip(for bpm: Double) async {
+        do {
+            let response: HeartHealthTipResponse = try await APIClient.shared.request(
+                path: "/api/health/tip/",
+                method: "POST",
+                body: HeartHealthTipRequest(
+                    metric: "heart_rate",
+                    value: bpm,
+                    status: heartRateStatus(for: bpm),
+                    context: "Latest Apple Watch heart-rate reading"
+                ),
+                requiresAuth: false
+            )
+
+            await MainActor.run {
+                healthTip = response.tip
+            }
+        } catch {
+            print("❌ Failed to generate heart-rate health tip:", error.localizedDescription)
+            await MainActor.run {
+                healthTip = fallbackHeartRateTip(for: bpm)
+            }
+        }
+    }
+
+    private func heartRateStatus(for bpm: Double) -> String {
+        if bpm < 50 || bpm > 120 {
+            return "critical"
+        }
+
+        if bpm > 100 {
+            return "warning"
+        }
+
+        return "normal"
+    }
+
+    private func fallbackHeartRateTip(for bpm: Double) -> String {
+        if bpm < 50 {
+            return "Your heart rate looks lower than usual. If you feel dizzy or unwell, consider seeking medical advice."
+        }
+
+        if bpm > 110 {
+            return "Your heart rate looks elevated. Try resting, hydrating, and checking again later."
+        }
+
+        return "Your heart rate looks stable. Keep your Apple Watch snug for reliable readings."
+    }
+// MARK: - HeartHealthTip API models
+private struct HeartHealthTipRequest: Encodable {
+    let metric: String
+    let value: Double?
+    let status: String
+    let context: String?
+}
+
+private struct HeartHealthTipResponse: Decodable {
+    let tip: String
+    let fallbackTip: String?
+    let source: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tip
+        case fallbackTip = "fallback_tip"
+        case source
+    }
+}
 }
 
 // MARK: - Reusable top badge icon with halo

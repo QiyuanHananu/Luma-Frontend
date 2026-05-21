@@ -15,6 +15,7 @@ struct HRVHealthView: View {
     @State private var errorMessage: String?
     @State private var selectedRange: HRVChartRange = .day
     @State private var hrvChartData: [HRVChartPoint] = []
+    @State private var healthTip = "Loading personalized health tip..."
     private let gutter: CGFloat = 10
 
     private var isRunningInPreview: Bool {
@@ -127,7 +128,7 @@ struct HRVHealthView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
 
-            Text(healthTipText)
+            Text(healthTip)
                 .font(.body)
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -141,22 +142,6 @@ struct HRVHealthView: View {
     private var hrvDisplayText: String {
         guard let latestHRVMS else { return "-- ms" }
         return String(format: "%.0f ms", latestHRVMS)
-    }
-
-    private var healthTipText: String {
-        guard let latestHRVMS else {
-            return "Wear your Apple Watch consistently to generate HRV recovery insights."
-        }
-
-        if latestHRVMS < 20 {
-            return "Your HRV looks quite low. Try to keep today gentle and prioritize rest."
-        }
-
-        if latestHRVMS < 35 {
-            return "Your HRV is a bit low. Hydration, light movement, and steady sleep may help recovery."
-        }
-
-        return "Your HRV looks stable. Keep your recovery routine consistent."
     }
 
     private var hrvTrendSection: some View {
@@ -293,6 +278,7 @@ struct HRVHealthView: View {
         latestUpdateTime = Date()
         errorMessage = nil
         isLoading = false
+        healthTip = "Your HRV looks stable. Keep your recovery routine consistent."
 
         let now = Date()
         hrvChartData = [
@@ -346,6 +332,7 @@ struct HRVHealthView: View {
                     latestHRVMS = nil
                     latestUpdateTime = nil
                     errorMessage = "No Apple Watch HRV sample found in last 24h."
+                    healthTip = "Wear your Apple Watch consistently to generate HRV recovery insights."
                     fetchHRVChartData()
                     return
                 }
@@ -353,6 +340,10 @@ struct HRVHealthView: View {
                 latestHRVMS = value
                 latestUpdateTime = Date()
                 fetchHRVChartData()
+                healthTip = "Generating personalized health tip..."
+                Task {
+                    await updateHealthTip(for: value)
+                }
 
                 Task {
                     await HealthMetricsService.shared.uploadHRV(
@@ -363,9 +354,76 @@ struct HRVHealthView: View {
             }
         }
     }
+
+    private func updateHealthTip(for hrv: Double) async {
+        do {
+            let response: HRVHealthTipResponse = try await APIClient.shared.request(
+                path: "/api/health/tip/",
+                method: "POST",
+                body: HRVHealthTipRequest(
+                    metric: "hrv",
+                    value: hrv,
+                    status: hrvStatus(for: hrv),
+                    context: "Latest Apple Watch HRV reading"
+                ),
+                requiresAuth: false
+            )
+
+            await MainActor.run {
+                healthTip = response.tip
+            }
+        } catch {
+            print("❌ Failed to generate HRV health tip:", error.localizedDescription)
+            await MainActor.run {
+                healthTip = fallbackHRVTip(for: hrv)
+            }
+        }
+    }
+
+    private func hrvStatus(for hrv: Double) -> String {
+        if hrv < 20 {
+            return "critical"
+        }
+
+        if hrv < 35 {
+            return "warning"
+        }
+
+        return "normal"
+    }
+
+    private func fallbackHRVTip(for hrv: Double) -> String {
+        if hrv < 20 {
+            return "Your HRV looks quite low. Try to keep today gentle and prioritize rest."
+        }
+
+        if hrv < 35 {
+            return "Your HRV is a bit low. Hydration, light movement, and steady sleep may help recovery."
+        }
+
+        return "Your HRV looks stable. Keep your recovery routine consistent."
+    }
 }
 
+// MARK: - HRVHealthTip API models
+private struct HRVHealthTipRequest: Encodable {
+    let metric: String
+    let value: Double?
+    let status: String
+    let context: String?
+}
 
+private struct HRVHealthTipResponse: Decodable {
+    let tip: String
+    let fallbackTip: String?
+    let source: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tip
+        case fallbackTip = "fallback_tip"
+        case source
+    }
+}
 
 private enum HRVChartRange: String, CaseIterable, Identifiable {
     case day
@@ -440,4 +498,3 @@ private struct PressableDimRefreshControl: View {
 #Preview {
     HRVHealthView()
 }
-

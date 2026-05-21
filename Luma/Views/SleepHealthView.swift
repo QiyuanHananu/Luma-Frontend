@@ -21,6 +21,7 @@ struct SleepHealthView: View {
     @State private var errorMessage: String?
     @State private var selectedRange: SleepChartRange = .day
     @State private var sleepTrendPoints: [SleepTrendPoint] = []
+    @State private var healthTip = "Loading personalized health tip..."
 
     private let gutter: CGFloat = 10
 
@@ -164,7 +165,7 @@ struct SleepHealthView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.secondary)
 
-            Text(healthTipText)
+            Text(healthTip)
                 .font(.body)
                 .foregroundColor(.primary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -247,25 +248,6 @@ struct SleepHealthView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
     }
 
-    private var healthTipText: String {
-        guard let latestSleepHours else {
-            return "Wear your Apple Watch overnight to generate sleep insights."
-        }
-
-        if latestSleepHours < 4 {
-            return "Your sleep looks very short. Try to keep today lighter and prioritize recovery tonight."
-        }
-
-        if latestSleepHours < 6 {
-            return "Your sleep was a bit short. A calmer evening routine may help improve recovery."
-        }
-
-        if latestSleepHours < 7 {
-            return "You are close to a stable sleep range. A consistent bedtime may help."
-        }
-
-        return "Your sleep duration looks stable. Keep your bedtime routine consistent."
-    }
 
     private func fetchLatestSleep() {
         isLoading = true
@@ -280,12 +262,17 @@ struct SleepHealthView: View {
                     latestUpdateTime = nil
                     sleepTrendPoints = []
                     errorMessage = "No Apple Watch sleep sample found for this sleep window."
+                    healthTip = "Wear your Apple Watch overnight to generate sleep insights."
                     return
                 }
 
                 latestSleepHours = hours
                 latestUpdateTime = Date()
                 sleepTrendPoints = makeTrendPoints(from: hours, range: selectedRange)
+                healthTip = "Generating personalized health tip..."
+                Task {
+                    await updateHealthTip(for: hours)
+                }
 
                 Task {
                     await HealthMetricsService.shared.uploadSleep(
@@ -295,6 +282,59 @@ struct SleepHealthView: View {
                 }
             }
         }
+    }
+
+    private func updateHealthTip(for hours: Double) async {
+        do {
+            let response: SleepHealthTipResponse = try await APIClient.shared.request(
+                path: "/api/health/tip/",
+                method: "POST",
+                body: SleepHealthTipRequest(
+                    metric: "sleep",
+                    value: hours,
+                    status: sleepStatus(for: hours),
+                    context: "Latest Apple Watch sleep reading"
+                ),
+                requiresAuth: false
+            )
+
+            await MainActor.run {
+                healthTip = response.tip
+            }
+        } catch {
+            print("❌ Failed to generate sleep health tip:", error.localizedDescription)
+            await MainActor.run {
+                healthTip = fallbackSleepTip(for: hours)
+            }
+        }
+    }
+
+    private func sleepStatus(for hours: Double) -> String {
+        if hours < 4 {
+            return "critical"
+        }
+
+        if hours < 7 {
+            return "warning"
+        }
+
+        return "normal"
+    }
+
+    private func fallbackSleepTip(for hours: Double) -> String {
+        if hours < 4 {
+            return "Your sleep looks very short. Try to keep today lighter and prioritize recovery tonight."
+        }
+
+        if hours < 6 {
+            return "Your sleep was a bit short. A calmer evening routine may help improve recovery."
+        }
+
+        if hours < 7 {
+            return "You are close to a stable sleep range. A consistent bedtime may help."
+        }
+
+        return "Your sleep duration looks stable. Keep your bedtime routine consistent."
     }
 
     private func makeTrendPoints(from currentHours: Double, range: SleepChartRange) -> [SleepTrendPoint] {
@@ -321,6 +361,26 @@ struct SleepHealthView: View {
                 SleepTrendPoint(label: "W4", hours: currentHours)
             ]
         }
+    }
+}
+
+// MARK: - SleepHealthTip API models
+private struct SleepHealthTipRequest: Encodable {
+    let metric: String
+    let value: Double?
+    let status: String
+    let context: String?
+}
+
+private struct SleepHealthTipResponse: Decodable {
+    let tip: String
+    let fallbackTip: String?
+    let source: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tip
+        case fallbackTip = "fallback_tip"
+        case source
     }
 }
 
