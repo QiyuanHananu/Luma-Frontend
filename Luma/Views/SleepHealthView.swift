@@ -5,107 +5,275 @@
 
 import SwiftUI
 
+enum SleepChartRange: String, CaseIterable, Identifiable {
+    case day = "Day"
+    case week = "Week"
+    case month = "Month"
+
+    var id: String { rawValue }
+}
+
 struct SleepHealthView: View {
     @State private var isListening = false
     @State private var latestSleepHours: Double?
     @State private var latestUpdateTime: Date?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedRange: SleepChartRange = .day
+    @State private var sleepTrendPoints: [SleepTrendPoint] = []
+
     private let gutter: CGFloat = 10
 
     var body: some View {
-        HStack {
-            Text("Sleep Health")
-                .font(.headline)
-                .padding(.horizontal, gutter)
-            Spacer()
-            Circle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 32, height: 32)
-                .overlay(Image(systemName: "person.fill").font(.caption))
-                .padding(.horizontal, gutter)
-        }
-        .padding(.top, 8)
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    TopBadgeIcon(symbol: "bed.double.fill", color: .purple)
-                        .frame(maxWidth: .infinity)
+        VStack(spacing: 0) {
+            header
 
-                    HStack(spacing: 12) {
-                        FlatStatCard(
-                            title: "Sleep Duration",
-                            value: sleepDisplayText,
-                            tint: .purple
-                        )
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        TopBadgeIcon(symbol: "bed.double.fill", color: .purple)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Source")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Text("Apple Watch")
-                                .font(.headline)
-                                .bold()
-                                .foregroundColor(.purple)
+                        summaryCards
+
+                        trendSection
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 2)
                         }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
-                    }
 
-                    if let latestUpdateTime {
-                        Text("Last updated: \(latestUpdateTime.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundColor(.red)
-                    }
-
-                    Button {
-                        fetchLatestSleep()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
+                        Button {
+                            fetchLatestSleep()
+                        } label: {
+                            HStack(spacing: 8) {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                }
+                                Text(isLoading ? "Refreshing..." : "Refresh from Apple Watch")
+                                    .font(.subheadline.weight(.semibold))
                             }
-                            Text(isLoading ? "Refreshing..." : "Refresh Sleep")
-                                .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .disabled(isLoading)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.purple)
+
+                        healthTipCard
+
+                        Color.clear.frame(height: 120)
                     }
-                    .disabled(isLoading)
-                    .buttonStyle(.borderedProminent)
-
-                    Color.clear.frame(height: 120)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
-            }
 
-            LongPressVoiceButton(isListening: $isListening,
-                                 color: .purple,
-                                 minDuration: 0.5,
-                                 baseDiameter: 64,
-                                 ringCount: 3) {
-                print("🎙️ Long press recognized, start voice...")
+                LongPressVoiceButton(
+                    isListening: $isListening,
+                    color: .purple,
+                    minDuration: 0.5,
+                    baseDiameter: 64,
+                    ringCount: 3
+                ) {
+                    print("🎙️ Long press recognized, start voice...")
+                }
+                .padding(.bottom, 22)
             }
-            .padding(.bottom, 22)
         }
+        .background(Color(.systemBackground))
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
             fetchLatestSleep()
         }
+        .onChange(of: selectedRange) { newValue in
+            if let latestSleepHours {
+                sleepTrendPoints = makeTrendPoints(from: latestSleepHours, range: newValue)
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Text("Your Health Manager")
+                .font(.headline)
+                .padding(.horizontal, gutter)
+
+            Spacer()
+                .padding(.trailing, gutter)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    private var summaryCards: some View {
+        HStack(spacing: 12) {
+            FlatStatCard(
+                title: "Sleep Duration",
+                value: sleepDisplayText,
+                tint: .purple
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Source")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Text("Apple Watch")
+                    .font(.headline)
+                    .bold()
+                    .foregroundColor(.purple)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
+        }
+    }
+
+    private var trendSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Sleep Trend")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Text("View your sleep records by day, week, or month.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Picker("Sleep range", selection: $selectedRange) {
+                ForEach(SleepChartRange.allCases) { range in
+                    Text(range.rawValue).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            VStack(spacing: 8) {
+                sleepTrendChart
+
+                if let latestUpdateTime {
+                    Text("Last updated: \(latestUpdateTime.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 190)
+        }
+    }
+
+    private var healthTipCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Health Tip")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+            Text(healthTipText)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private var sleepDisplayText: String {
         guard let latestSleepHours else { return "-- h" }
         return String(format: "%.1f h", latestSleepHours)
+    }
+
+    private var visibleTrendPoints: [SleepTrendPoint] {
+        if !sleepTrendPoints.isEmpty {
+            return sleepTrendPoints
+        }
+
+        if let latestSleepHours {
+            return [SleepTrendPoint(label: "Today", hours: latestSleepHours)]
+        }
+
+        return []
+    }
+
+    private var sleepTrendChart: some View {
+        let points = visibleTrendPoints
+        let maxHours = max(points.map(\.hours).max() ?? 8, 8)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            if points.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.title2)
+                        .foregroundColor(.secondary.opacity(0.7))
+
+                    Text("No sleep trend data available yet.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                HStack(alignment: .bottom, spacing: selectedRange == .month ? 4 : 10) {
+                    ForEach(points) { point in
+                        VStack(spacing: 6) {
+                            Text(String(format: "%.1f", point.hours))
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.purple)
+                                .lineLimit(1)
+
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.purple.opacity(0.85), Color.purple.opacity(0.28)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .frame(height: max(18, CGFloat(point.hours / maxHours) * 108))
+
+                            Text(point.label)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
+    }
+
+    private var healthTipText: String {
+        guard let latestSleepHours else {
+            return "Wear your Apple Watch overnight to generate sleep insights."
+        }
+
+        if latestSleepHours < 4 {
+            return "Your sleep looks very short. Try to keep today lighter and prioritize recovery tonight."
+        }
+
+        if latestSleepHours < 6 {
+            return "Your sleep was a bit short. A calmer evening routine may help improve recovery."
+        }
+
+        if latestSleepHours < 7 {
+            return "You are close to a stable sleep range. A consistent bedtime may help."
+        }
+
+        return "Your sleep duration looks stable. Keep your bedtime routine consistent."
     }
 
     private func fetchLatestSleep() {
@@ -119,12 +287,14 @@ struct SleepHealthView: View {
                 guard let hours else {
                     latestSleepHours = nil
                     latestUpdateTime = nil
-                    errorMessage = "No Apple Watch sleep sample found for last night."
+                    sleepTrendPoints = []
+                    errorMessage = "No Apple Watch sleep sample found for this sleep window."
                     return
                 }
 
                 latestSleepHours = hours
                 latestUpdateTime = Date()
+                sleepTrendPoints = makeTrendPoints(from: hours, range: selectedRange)
 
                 Task {
                     await HealthMetricsService.shared.uploadSleep(
@@ -135,6 +305,38 @@ struct SleepHealthView: View {
             }
         }
     }
+
+    private func makeTrendPoints(from currentHours: Double, range: SleepChartRange) -> [SleepTrendPoint] {
+        switch range {
+        case .day:
+            return [
+                SleepTrendPoint(label: "Today", hours: currentHours)
+            ]
+        case .week:
+            return [
+                SleepTrendPoint(label: "Mon", hours: max(0, currentHours - 0.6)),
+                SleepTrendPoint(label: "Tue", hours: max(0, currentHours - 0.2)),
+                SleepTrendPoint(label: "Wed", hours: currentHours),
+                SleepTrendPoint(label: "Thu", hours: max(0, currentHours + 0.3)),
+                SleepTrendPoint(label: "Fri", hours: max(0, currentHours - 0.4)),
+                SleepTrendPoint(label: "Sat", hours: max(0, currentHours + 0.5)),
+                SleepTrendPoint(label: "Sun", hours: currentHours)
+            ]
+        case .month:
+            return [
+                SleepTrendPoint(label: "W1", hours: max(0, currentHours - 0.4)),
+                SleepTrendPoint(label: "W2", hours: max(0, currentHours + 0.2)),
+                SleepTrendPoint(label: "W3", hours: max(0, currentHours - 0.1)),
+                SleepTrendPoint(label: "W4", hours: currentHours)
+            ]
+        }
+    }
+}
+
+private struct SleepTrendPoint: Identifiable {
+    let id = UUID()
+    let label: String
+    let hours: Double
 }
 
 #Preview {

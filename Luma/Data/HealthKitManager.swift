@@ -91,6 +91,13 @@ final class HealthKitManager {
         let endDate: Date
     }
 
+    struct SleepTrendReading {
+        let label: String
+        let hours: Double
+        let startDate: Date
+        let endDate: Date
+    }
+
     struct HealthSnapshot {
         let heartRate: HeartRateReading?
         let hrvSDNNMs: Double?
@@ -344,8 +351,131 @@ final class HealthKitManager {
         healthStore.execute(query)
     }
 
-    // Sleep: calculate asleep duration from last night (18:00 yesterday to 12:00 today), in hours.
+    // Sleep: calculate asleep duration from the current overnight sleep window.
     func fetchSleepHoursFromLastNight(completion: @escaping (Double?) -> Void) {
+        let window = currentOvernightSleepWindow()
+        fetchSleepHours(from: window.start, to: window.end, label: "Today") { reading in
+            completion(reading?.hours)
+        }
+    }
+
+    func fetchSleepTrendReadings(
+        range: SleepTrendRange,
+        completion: @escaping ([SleepTrendReading]) -> Void
+    ) {
+        switch range {
+        case .day:
+            let window = currentOvernightSleepWindow()
+            fetchSleepHours(from: window.start, to: window.end, label: "Today") { reading in
+                completion(reading.map { [$0] } ?? [])
+            }
+        case .week:
+            fetchSleepTrendForRecentDays(dayCount: 7, completion: completion)
+        case .month:
+            fetchSleepTrendForRecentWeeks(weekCount: 4, completion: completion)
+        }
+    }
+
+    private func fetchSleepTrendForRecentDays(
+        dayCount: Int,
+        completion: @escaping ([SleepTrendReading]) -> Void
+    ) {
+        let calendar = Calendar.current
+        let today = Date()
+        let group = DispatchGroup()
+        var readings: [SleepTrendReading] = []
+        let lock = NSLock()
+
+        for offset in stride(from: dayCount - 1, through: 0, by: -1) {
+            guard let targetDay = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let window = overnightSleepWindow(endingOn: targetDay)
+            let label = weekdayLabel(for: targetDay)
+
+            group.enter()
+            fetchSleepHours(from: window.start, to: window.end, label: label) { reading in
+                if let reading {
+                    lock.lock()
+                    readings.append(reading)
+                    lock.unlock()
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(readings.sorted { $0.startDate < $1.startDate })
+        }
+    }
+
+    private func fetchSleepTrendForRecentWeeks(
+        weekCount: Int,
+        completion: @escaping ([SleepTrendReading]) -> Void
+    ) {
+        let calendar = Calendar.current
+        let today = Date()
+        let group = DispatchGroup()
+        var readings: [SleepTrendReading] = []
+        let lock = NSLock()
+
+        for offset in stride(from: weekCount - 1, through: 0, by: -1) {
+            guard
+                let weekEndDay = calendar.date(byAdding: .day, value: -(offset * 7), to: today),
+                let weekStartDay = calendar.date(byAdding: .day, value: -6, to: weekEndDay)
+            else { continue }
+
+            let label = offset == 0 ? "This W" : "W-\(offset)"
+            let dayGroup = DispatchGroup()
+            var dailyHours: [Double] = []
+
+            for dayOffset in 0..<7 {
+                guard let targetDay = calendar.date(byAdding: .day, value: dayOffset, to: weekStartDay) else { continue }
+                let window = overnightSleepWindow(endingOn: targetDay)
+
+                dayGroup.enter()
+                fetchSleepHours(from: window.start, to: window.end, label: weekdayLabel(for: targetDay)) { reading in
+                    if let reading {
+                        lock.lock()
+                        dailyHours.append(reading.hours)
+                        lock.unlock()
+                    }
+                    dayGroup.leave()
+                }
+            }
+
+            group.enter()
+            dayGroup.notify(queue: .global()) {
+                guard !dailyHours.isEmpty else {
+                    group.leave()
+                    return
+                }
+
+                let averageHours = dailyHours.reduce(0, +) / Double(dailyHours.count)
+                let weekWindow = self.weekDisplayWindow(startDay: weekStartDay, endDay: weekEndDay)
+                let reading = SleepTrendReading(
+                    label: label,
+                    hours: averageHours,
+                    startDate: weekWindow.start,
+                    endDate: weekWindow.end
+                )
+
+                lock.lock()
+                readings.append(reading)
+                lock.unlock()
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(readings.sorted { $0.startDate < $1.startDate })
+        }
+    }
+
+    private func fetchSleepHours(
+        from startDate: Date,
+        to endDate: Date,
+        label: String,
+        completion: @escaping (SleepTrendReading?) -> Void
+    ) {
         guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
             completion(nil)
             return
@@ -357,24 +487,13 @@ final class HealthKitManager {
                     completion(nil)
                     return
                 }
-                self.fetchSleepHoursFromLastNight(completion: completion)
+                self.fetchSleepHours(from: startDate, to: endDate, label: label, completion: completion)
             }
             return
         }
 
-        let calendar = Calendar.current
-        let now = Date()
-        guard
-            let todayNoon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now),
-            let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
-            let yesterday18 = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: yesterday)
-        else {
-            completion(nil)
-            return
-        }
-
-        let predicate = HKQuery.predicateForSamples(withStart: yesterday18, end: todayNoon)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
         let query = HKSampleQuery(
             sampleType: sleepType,
@@ -388,31 +507,75 @@ final class HealthKitManager {
                 return
             }
 
-            guard let categorySamples = samples as? [HKCategorySample], !categorySamples.isEmpty else {
-                print("ℹ️ No sleep sample available for last night.")
+            let categorySamples = samples as? [HKCategorySample] ?? []
+            guard !categorySamples.isEmpty else {
+                print("ℹ️ No sleep sample available for \(label).")
                 completion(nil)
                 return
             }
 
             let watchSamples = categorySamples.filter(\.isAppleWatchSource)
-            guard !watchSamples.isEmpty else {
-                print("ℹ️ No Apple Watch sleep sample available for last night.")
+            let displaySamples = watchSamples.isEmpty ? categorySamples : watchSamples
+
+            let asleepSeconds = displaySamples
+                .filter { HKCategoryValueSleepAnalysis(rawValue: $0.value).isAsleep }
+                .reduce(0.0) { partial, sample in
+                    let clippedStart = max(sample.startDate, startDate)
+                    let clippedEnd = min(sample.endDate, endDate)
+                    let duration = clippedEnd.timeIntervalSince(clippedStart)
+                    return partial + max(0, duration)
+                }
+
+            let hours = asleepSeconds / 3600.0
+            print("😴 Sleep duration \(label): \(String(format: "%.2f", hours)) h")
+
+            guard hours > 0 else {
                 completion(nil)
                 return
             }
 
-            let asleepSeconds = watchSamples
-                .filter { HKCategoryValueSleepAnalysis(rawValue: $0.value).isAsleep }
-                .reduce(0.0) { partial, sample in
-                    partial + sample.endDate.timeIntervalSince(sample.startDate)
-                }
-
-            let hours = asleepSeconds / 3600.0
-            print("😴 Sleep duration last night: \(String(format: "%.2f", hours)) h")
-            completion(hours > 0 ? hours : nil)
+            completion(
+                SleepTrendReading(
+                    label: label,
+                    hours: hours,
+                    startDate: startDate,
+                    endDate: endDate
+                )
+            )
         }
 
         healthStore.execute(query)
+    }
+
+    private func currentOvernightSleepWindow() -> (start: Date, end: Date) {
+        overnightSleepWindow(endingOn: Date())
+    }
+
+    private func overnightSleepWindow(endingOn day: Date) -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: day)
+        let start = calendar.date(byAdding: .hour, value: -6, to: startOfDay) ?? day.addingTimeInterval(-30 * 60 * 60)
+        let end = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: day) ?? day
+
+        if calendar.isDateInToday(day) {
+            return (start, min(end, Date()))
+        }
+
+        return (start, end)
+    }
+
+    private func weekDisplayWindow(startDay: Date, endDay: Date) -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDay)
+        let end = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDay) ?? endDay
+        return (start, end)
+    }
+
+    private func weekdayLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.dateFormat = "E"
+        return formatter.string(from: date)
     }
 }
 
@@ -456,4 +619,11 @@ private extension HKCategoryValueSleepAnalysis? {
             return false
         }
     }
+}
+
+
+enum SleepTrendRange {
+    case day
+    case week
+    case month
 }

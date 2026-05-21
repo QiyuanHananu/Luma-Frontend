@@ -11,7 +11,7 @@ import HealthKit
 
 struct DigitalTwinPage: View {
     @State private var navigateToHeartRate = false
-    @State private var navigateToBrainHealth = false
+    @State private var navigateToSleepHealth = false
     @State private var navigateToHeartHealth = false
     @State private var navigateToHRVHealth = false
     @State private var overallStatus: DigitalTwinHealthStatus = .normal
@@ -19,6 +19,9 @@ struct DigitalTwinPage: View {
     @State private var statusSummary = "Your current health signals look stable."
     @State private var metricAssessments: [DigitalTwinMetricAssessment] = []
     @State private var isLoadingAssessment = false
+    @State private var displayedHeartRate: Double?
+    @State private var displayedHRV: Double?
+    @State private var displayedSleepHours: Double?
     private let healthStore = HKHealthStore()
 
     var body: some View {
@@ -39,8 +42,8 @@ struct DigitalTwinPage: View {
                     .padding(.bottom, 18)
             }
         }
-        .sheet(isPresented: $navigateToBrainHealth) {
-            BrainHealthView()
+        .sheet(isPresented: $navigateToSleepHealth) {
+            SleepHealthView()
         }
         .sheet(isPresented: $navigateToHeartHealth) {
             HeartHealthView()
@@ -107,15 +110,17 @@ struct DigitalTwinPage: View {
                         .position(x: proxy.size.width * 0.50, y: proxy.size.height * 0.53)
 
                     healthPoint(
-                        systemImage: "brain.head.profile",
+                        systemImage: "bed.double.fill",
                         status: statusForMetric("sleep"),
-                        action: { navigateToBrainHealth = true }
+                        valueText: formattedSleepHours,
+                        action: { navigateToSleepHealth = true }
                     )
                     .position(x: proxy.size.width * 0.5, y: proxy.size.height * 0.08)
 
                     healthPoint(
                         systemImage: "heart.fill",
                         status: statusForMetric("heart_rate"),
+                        valueText: formattedHeartRate,
                         action: { navigateToHeartHealth = true }
                     )
                     .position(x: proxy.size.width * 0.54, y: proxy.size.height * 0.25)
@@ -123,6 +128,7 @@ struct DigitalTwinPage: View {
                     healthPoint(
                         systemImage: "waveform.path.ecg",
                         status: statusForMetric("hrv"),
+                        valueText: formattedHRV,
                         action: { navigateToHRVHealth = true }
                     )
                     .position(x: proxy.size.width * 0.47, y: proxy.size.height * 0.30)
@@ -310,31 +316,31 @@ struct DigitalTwinPage: View {
     private func healthPoint(
         systemImage: String,
         status: DigitalTwinHealthStatus,
+        valueText: String?,
         action: @escaping () -> Void
     ) -> some View {
         let pointColor = colorForStatus(status)
         return Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(pointColor.opacity(0.12))
-                    .frame(width: 34, height: 34)
-                    .blur(radius: 1.5)
+            VStack(spacing: 1) {
+                ZStack {
+                    Circle()
+                        .fill(pointColor.opacity(0.14))
+                        .frame(width: 18, height: 18)
+                        .blur(radius: 1.2)
 
-                Circle()
-                    .stroke(pointColor.opacity(0.26), lineWidth: 1)
-                    .frame(width: 28, height: 28)
+                    Circle()
+                        .stroke(pointColor.opacity(0.32), lineWidth: 0.8)
+                        .frame(width: 14, height: 14)
 
-                Circle()
-                    .fill(pointColor)
-                    .frame(width: 12, height: 12)
-                    .shadow(color: pointColor.opacity(0.45), radius: 6, x: 0, y: 0)
-
-                Image(systemName: systemImage)
-                    .font(.system(size: 6, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.95))
+                    Circle()
+                        .fill(pointColor)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: pointColor.opacity(0.48), radius: 5, x: 0, y: 0)
+                }
+                .frame(width: 26, height: 26)
+                // Removed valueText label for visual simplification
             }
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
+            .contentShape(Rectangle())
             .accessibilityLabel("Health insight point")
         }
         .buttonStyle(.plain)
@@ -359,6 +365,8 @@ struct DigitalTwinPage: View {
             let latestHRV = try? await fetchLatestHRVMS()
             let latestSleepHours = try? await fetchSleepHoursInLastDay()
 
+            print("🩺 Digital Twin values:", latestHeartRate as Any, latestHRV as Any, latestSleepHours as Any)
+
             let response: DigitalTwinHealthAssessmentResponse = try await APIClient.shared.request(
                 path: "/api/health/assess/",
                 method: "POST",
@@ -371,6 +379,9 @@ struct DigitalTwinPage: View {
             )
 
             await MainActor.run {
+                displayedHeartRate = latestHeartRate
+                displayedHRV = latestHRV
+                displayedSleepHours = latestSleepHours
                 overallStatus = DigitalTwinHealthStatus(rawValue: response.overallStatus) ?? .unknown
                 overallScore = response.score
                 statusSummary = response.summary
@@ -379,6 +390,9 @@ struct DigitalTwinPage: View {
         } catch {
             print("❌ Failed to load Digital Twin health assessment:", error.localizedDescription)
             await MainActor.run {
+                displayedHeartRate = nil
+                displayedHRV = nil
+                displayedSleepHours = nil
                 overallStatus = .unknown
                 overallScore = nil
                 statusSummary = "Could not load health assessment right now."
@@ -479,9 +493,15 @@ struct DigitalTwinPage: View {
     private func fetchSleepHoursInLastDay() async throws -> Double? {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return nil }
 
-        let endDate = Date()
-        let startDate = Calendar.current.date(byAdding: .day, value: -1, to: endDate) ?? endDate.addingTimeInterval(-24 * 60 * 60)
-        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictEndDate)
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+        let startDate = calendar.date(byAdding: .hour, value: -6, to: startOfToday) ?? now.addingTimeInterval(-30 * 60 * 60)
+        let endDate = now
+
+        // Use overlapping samples instead of strict end-date matching.
+        // Apple Health often stores overnight sleep with segments crossing midnight.
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
 
         return try await withCheckedThrowingContinuation { continuation in
             let query = HKSampleQuery(
@@ -496,13 +516,25 @@ struct DigitalTwinPage: View {
                 }
 
                 let sleepSamples = (samples as? [HKCategorySample]) ?? []
-                let asleepSeconds = sleepSamples.reduce(0.0) { total, sample in
-                    let isAsleep = sample.value != HKCategoryValueSleepAnalysis.inBed.rawValue &&
-                        sample.value != HKCategoryValueSleepAnalysis.awake.rawValue
+                let asleepRawValues: Set<Int> = [
+                    HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                    HKCategoryValueSleepAnalysis.asleepREM.rawValue
+                ]
 
-                    guard isAsleep else { return total }
-                    return total + sample.endDate.timeIntervalSince(sample.startDate)
+                let asleepSeconds = sleepSamples.reduce(0.0) { total, sample in
+                    guard asleepRawValues.contains(sample.value) else { return total }
+
+                    let clippedStart = max(sample.startDate, startDate)
+                    let clippedEnd = min(sample.endDate, endDate)
+                    let duration = clippedEnd.timeIntervalSince(clippedStart)
+
+                    guard duration > 0 else { return total }
+                    return total + duration
                 }
+
+                print("😴 Sleep samples:", sleepSamples.count, "hours:", asleepSeconds / 3600.0)
 
                 guard asleepSeconds > 0 else {
                     continuation.resume(returning: nil)
@@ -514,6 +546,21 @@ struct DigitalTwinPage: View {
 
             healthStore.execute(query)
         }
+    }
+
+    private var formattedSleepHours: String? {
+        guard let displayedSleepHours else { return nil }
+        return String(format: "%.1fh", displayedSleepHours)
+    }
+
+    private var formattedHeartRate: String? {
+        guard let displayedHeartRate else { return nil }
+        return String(format: "%.0fbpm", displayedHeartRate)
+    }
+
+    private var formattedHRV: String? {
+        guard let displayedHRV else { return nil }
+        return String(format: "%.0fms", displayedHRV)
     }
 
     private func statusForMetric(_ metric: String) -> DigitalTwinHealthStatus {

@@ -17,96 +17,134 @@ struct HRVHealthView: View {
     @State private var hrvChartData: [HRVChartPoint] = []
     private let gutter: CGFloat = 10
 
+    private var isRunningInPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
     var body: some View {
-        HStack {
-            Text("HRV Health")
-                .font(.headline)
-                .padding(.horizontal, gutter)
-            Spacer()
-            Circle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 32, height: 32)
-                .overlay(Image(systemName: "person.fill").font(.caption))
-                .padding(.horizontal, gutter)
-        }
-        .padding(.top, 8)
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    TopBadgeIcon(symbol: "waveform.path.ecg", color: .green)
-                        .frame(maxWidth: .infinity)
+        VStack(spacing: 0) {
+            header
 
-                    HStack(spacing: 12) {
-                        FlatStatCard(
-                            title: "HRV (SDNN)",
-                            value: hrvDisplayText,
-                            tint: .green
-                        )
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        TopBadgeIcon(symbol: "waveform.path.ecg", color: .green)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Source")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Text("Apple Watch")
-                                .font(.headline)
-                                .bold()
-                                .foregroundColor(.green)
+                        summaryCards
+
+                        hrvTrendSection
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 2)
                         }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
-                    }
 
-                    if let latestUpdateTime {
-                        Text("Last updated: \(latestUpdateTime.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundColor(.red)
-                    }
-
-                    hrvTrendSection
-
-                    Button {
-                        fetchLatestHRV()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
+                        Button {
+                            fetchLatestHRV()
+                        } label: {
+                            HStack(spacing: 8) {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(.circular)
+                                }
+                                Text(isLoading ? "Refreshing..." : "Refresh from Apple Watch")
+                                    .font(.subheadline.weight(.semibold))
                             }
-                            Text(isLoading ? "Refreshing..." : "Refresh HRV")
-                                .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .disabled(isLoading)
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+
+                        healthTipCard
+
+                        Color.clear.frame(height: 120)
                     }
-                    .disabled(isLoading)
-                    .buttonStyle(.borderedProminent)
-
-                    Color.clear.frame(height: 120)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.horizontal, 16)
-            }
 
-            LongPressVoiceButton(isListening: $isListening,
-                                 color: .green,
-                                 minDuration: 0.5,
-                                 baseDiameter: 64,
-                                 ringCount: 3) {
-                print("🎙️ Long press recognized, start voice...")
+                LongPressVoiceButton(
+                    isListening: $isListening,
+                    color: .green,
+                    minDuration: 0.5,
+                    baseDiameter: 64,
+                    ringCount: 3
+                ) {
+                    print("🎙️ Long press recognized, start voice...")
+                }
+                .padding(.bottom, 22)
             }
-            .padding(.bottom, 22)
         }
+        .background(Color(.systemBackground))
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            fetchLatestHRV()
+            if isRunningInPreview {
+                loadPreviewData()
+            } else {
+                fetchLatestHRV()
+            }
         }
+    }
+
+    private var header: some View {
+        HStack {
+            Text("Your Health Manager")
+                .font(.headline)
+                .padding(.horizontal, gutter)
+
+            Spacer()
+                .padding(.trailing, gutter)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    private var summaryCards: some View {
+        HStack(spacing: 12) {
+            FlatStatCard(
+                title: "HRV (SDNN)",
+                value: hrvDisplayText,
+                tint: .green
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Source")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Text("Apple Watch")
+                    .font(.headline)
+                    .bold()
+                    .foregroundColor(.green)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5))
+        }
+    }
+
+    private var healthTipCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Health Tip")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.secondary)
+
+            Text(healthTipText)
+                .font(.body)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
     }
 
     private var hrvDisplayText: String {
@@ -114,21 +152,35 @@ struct HRVHealthView: View {
         return String(format: "%.0f ms", latestHRVMS)
     }
 
-    private var hrvTrendSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("HRV Trend")
-                        .font(.headline)
-                    Text("View your HRV records by day, week, or month.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+    private var healthTipText: String {
+        guard let latestHRVMS else {
+            return "Wear your Apple Watch consistently to generate HRV recovery insights."
+        }
 
-                Spacer()
+        if latestHRVMS < 20 {
+            return "Your HRV looks quite low. Try to keep today gentle and prioritize rest."
+        }
+
+        if latestHRVMS < 35 {
+            return "Your HRV is a bit low. Hydration, light movement, and steady sleep may help recovery."
+        }
+
+        return "Your HRV looks stable. Keep your recovery routine consistent."
+    }
+
+    private var hrvTrendSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("HRV Trend")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Text("View your HRV records by day, week, or month.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
-            Picker("Range", selection: $selectedRange) {
+            Picker("HRV range", selection: $selectedRange) {
                 ForEach(HRVChartRange.allCases) { range in
                     Text(range.title).tag(range)
                 }
@@ -138,37 +190,66 @@ struct HRVHealthView: View {
                 fetchHRVChartData()
             }
 
-            if hrvChartData.isEmpty {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(.secondarySystemGroupedBackground))
-                    .frame(height: 220)
-                    .overlay(
+            VStack(spacing: 8) {
+                if hrvChartData.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "chart.xyaxis.line")
+                            .font(.title2)
+                            .foregroundColor(.secondary.opacity(0.7))
+
                         Text("No HRV trend data available yet.")
                             .font(.footnote)
                             .foregroundColor(.secondary)
-                    )
-            } else {
-                Chart(hrvChartData) { point in
-                    LineMark(
-                        x: .value("Time", point.date),
-                        y: .value("HRV", point.value)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .foregroundStyle(Color.green)
-
-                    PointMark(
-                        x: .value("Time", point.date),
-                        y: .value("HRV", point.value)
-                    )
-                    .foregroundStyle(Color.green)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Chart(hrvChartData) { point in
+                        LineMark(
+                            x: .value("Time", point.date),
+                            y: .value("HRV", point.value)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(Color.green)
+                    }
+                    .chartYAxisLabel("ms")
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: selectedRange == .day ? 4 : 6))
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .padding(12)
                 }
-                .chartYAxisLabel("ms")
-                .frame(height: 220)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separator), lineWidth: 0.5))
+
+                if let latestUpdateTime {
+                    Text("Last updated: \(latestUpdateTime.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 220)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(.separator), lineWidth: 0.5))
         }
+    }
+
+    private func loadPreviewData() {
+        latestHRVMS = 42
+        latestUpdateTime = Date()
+        errorMessage = nil
+        isLoading = false
+
+        let now = Date()
+        hrvChartData = [
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60 * 6), value: 34),
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60 * 5), value: 38),
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60 * 4), value: 36),
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60 * 3), value: 44),
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60 * 2), value: 41),
+            HRVChartPoint(date: now.addingTimeInterval(-60 * 60), value: 42)
+        ]
     }
 
     private func fetchHRVChartData() {
