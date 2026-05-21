@@ -12,23 +12,29 @@
 //
 
 import SwiftUI
+import Speech
+import AVFoundation
+import UIKit
+import AudioToolbox
 
 struct CompanionView: View {
     @State private var userInput = ""
-    @State private var isListening = false
     @State private var conversations: [Conversation] = []
     @State private var lumaEmotion: LumaEmotion = .curious
     @State private var showInputArea = true
     @State private var showConversationBubble = false
     @State private var showDigitalTwinView = false
     @State private var showChatHistoryView = false
+    @State private var showDashboardView = false
     @State private var showSettingsDialog = false
     @State private var showEmergencyDialog = false
     @State private var showLogoutConfirmation = false
     @State private var isChatFocusMode = false
+    @State private var isPressingVoiceInput = false
     @State private var activeRiskAlert: RiskAlertItem?
     @State private var isAwaitingAIReply = false
     @FocusState private var isInputFocused: Bool
+    @StateObject private var speechRecognizer = SpeechRecognizer()
 
     private var isRunningInPreview: Bool {
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
@@ -93,6 +99,9 @@ struct CompanionView: View {
             .navigationDestination(isPresented: $showChatHistoryView) {
                 ChatHistoryView()
             }
+            .navigationDestination(isPresented: $showDashboardView) {
+                DashboardRedesignView()
+            }
             .navigationTitle("")
             .navigationBarHidden(true)
             .onTapGesture {
@@ -106,6 +115,7 @@ struct CompanionView: View {
         }
         .onAppear {
             showInputArea = true
+            speechRecognizer.requestAuthorization()
 
             guard !isRunningInPreview else {
                 conversations = []
@@ -117,6 +127,9 @@ struct CompanionView: View {
             Task {
                 await refreshRiskAlertState()
             }
+        }
+        .onChange(of: speechRecognizer.transcript) { _, newValue in
+            userInput = newValue
         }
         .alert("Settings", isPresented: $showSettingsDialog) {
             Button("Logout", role: .destructive) {
@@ -258,9 +271,9 @@ struct CompanionView: View {
                     Spacer()
 
                     Button(action: {
-                        showSettingsDialog = true
+                        showDashboardView = true
                     }) {
-                        Image(systemName: "gearshape.circle.fill")
+                        Image(systemName: "square.grid.2x2.fill")
                             .font(.system(size: 22, weight: .semibold))
                             .frame(width: 44, height: 44)
                             .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
@@ -275,7 +288,7 @@ struct CompanionView: View {
                                     .frame(width: 44, height: 44)
                             )
                     }
-                    .accessibilityLabel("Settings")
+                    .accessibilityLabel("Open Dashboard")
 
                     Button(action: {
                         showEmergencyDialog = true
@@ -378,7 +391,7 @@ struct CompanionView: View {
         // 输入栏
         HStack(spacing: 12) {
             // 文本输入框
-            TextField("Have a chat with Luma...", text: $userInput, axis: .vertical)
+            TextField("Type or hold the mic to talk with Luma...", text: $userInput, axis: .vertical)
                 .focused($isInputFocused)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
@@ -400,19 +413,70 @@ struct CompanionView: View {
                         }
                     }
                 }
-            // 不用回车直接发送，避免中文输入法候选未确认时误发。
-            
-            // 语音输入按钮
-            Button(action: toggleVoiceInput) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(isListening ? Color(red: 0.78, green: 0.36, blue: 0.32) : Color(red: 0.78, green: 0.90, blue: 0.62))
-                    .frame(width: 44, height: 44)
-                    .background(Color.clear)
-                    .scaleEffect(isListening ? 1.08 : 1.0)
-                    .animation(.easeInOut(duration: 0.5), value: isListening)
+
+            // voice button: hold to speak, release to stop
+            ZStack {
+                if isPressingVoiceInput {
+                    Circle()
+                        .stroke(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.34), lineWidth: 7)
+                        .frame(width: 62, height: 62)
+                        .blur(radius: 1.5)
+                        .transition(.scale.combined(with: .opacity))
+                }
+
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: isPressingVoiceInput ? [
+                                Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.42),
+                                Color(red: 0.46, green: 0.62, blue: 0.32).opacity(0.22)
+                            ] : [
+                                Color.white.opacity(0.26),
+                                Color.white.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                isPressingVoiceInput ? Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.72) : Color.black.opacity(0.08),
+                                lineWidth: isPressingVoiceInput ? 1.8 : 1
+                            )
+                    )
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: speechRecognizer.isRecording ? "waveform" : "mic")
+                    .font(.system(size: speechRecognizer.isRecording ? 21 : 20, weight: .semibold))
+                    .foregroundColor(speechRecognizer.isRecording ? Color(red: 0.25, green: 0.40, blue: 0.22) : Color(red: 0.46, green: 0.62, blue: 0.32))
             }
-            
+            .frame(width: 54, height: 54)
+            .scaleEffect(isPressingVoiceInput ? 1.12 : 1.0)
+            .shadow(color: isPressingVoiceInput ? Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.48) : Color.clear, radius: 14, x: 0, y: 0)
+            .animation(.spring(response: 0.18, dampingFraction: 0.64), value: isPressingVoiceInput)
+            .animation(.easeInOut(duration: 0.16), value: speechRecognizer.isRecording)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !isPressingVoiceInput else { return }
+                        isPressingVoiceInput = true
+                        triggerVoicePressHaptic()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                            guard isPressingVoiceInput else { return }
+                            startVoiceInputIfNeeded()
+                        }
+                    }
+                    .onEnded { _ in
+                        isPressingVoiceInput = false
+                        stopVoiceInput()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                            triggerVoiceReleaseHaptic()
+                        }
+                    }
+            )
+            .accessibilityLabel(speechRecognizer.isRecording ? "Release to stop voice input" : "Hold to start voice input")
+
             // 发送按钮
             if !userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button(action: sendMessage) {
@@ -633,20 +697,46 @@ struct CompanionView: View {
         print("🚪 Logout selected from companion settings")
     }
 
-    private func toggleVoiceInput() {
-        withAnimation {
-            isListening.toggle()
+    private func startVoiceInputIfNeeded() {
+        guard !speechRecognizer.isRecording else { return }
+
+        lumaEmotion = .curious
+        showInputArea = true
+        hideKeyboard()
+
+        speechRecognizer.startRecording()
+    }
+
+    private func stopVoiceInput() {
+        if speechRecognizer.isRecording {
+            speechRecognizer.stopRecording()
         }
-        
-        // 模拟语音输入
-        if isListening {
-            lumaEmotion = .curious
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                isListening = false
-                userInput = "Content just entered via voice input"
-                // 不再强制设置为happy，保持curious状态
-            }
-        }
+
+        userInput = speechRecognizer.transcript
+    }
+
+    private func triggerVoicePressHaptic() {
+        let impact = UIImpactFeedbackGenerator(style: .heavy)
+        impact.prepare()
+        impact.impactOccurred(intensity: 1.0)
+
+        let selection = UISelectionFeedbackGenerator()
+        selection.prepare()
+        selection.selectionChanged()
+
+        AudioServicesPlaySystemSound(1519)
+    }
+
+    private func triggerVoiceReleaseHaptic() {
+        let impact = UIImpactFeedbackGenerator(style: .heavy)
+        impact.prepare()
+        impact.impactOccurred(intensity: 1.0)
+
+        let selection = UISelectionFeedbackGenerator()
+        selection.prepare()
+        selection.selectionChanged()
+
+        AudioServicesPlaySystemSound(1520)
     }
     
     // MARK: - 超大尺寸Luma角色
@@ -658,9 +748,26 @@ struct CompanionView: View {
     private var bottomInputArea: some View {
         VStack {
             Spacer()
-            
+
             if showInputArea {
-                VStack(spacing: 15) {
+                VStack(spacing: 8) {
+                    if isPressingVoiceInput {
+                        Text("Listening... release to convert to text")
+                            .font(.caption.weight(.medium))
+                            .foregroundColor(Color(red: 0.46, green: 0.62, blue: 0.32))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.76))
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color(red: 0.78, green: 0.90, blue: 0.62).opacity(0.55), lineWidth: 1)
+                                    )
+                            )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
                     // 输入框
                     inputArea
                 }
