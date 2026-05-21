@@ -25,7 +25,7 @@ struct TestAPI: View {
     }
     
     func fetchAPI() {
-        guard let url = URL(string: "http://192.168.1.2:8001/test") else { return }
+        guard let url = URL(string: "https://luma-backend-9mz4.onrender.com/test") else { return }
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let data = data,
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
