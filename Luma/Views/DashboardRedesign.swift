@@ -74,6 +74,7 @@ struct DashboardRedesignView: View {
     @State private var selectedRange: ReportRangeOption = .last14Days
     @State private var showGeneratingOverlay = false
     @StateObject private var proactiveViewModel = DashboardProactiveViewModel()
+    @StateObject private var healthDashboardViewModel = DashboardHealthViewModel()
 
     var body: some View {
         NavigationStack {
@@ -114,12 +115,14 @@ struct DashboardRedesignView: View {
                 }
                 .task {
                     await proactiveViewModel.loadProactiveTracking()
+                    healthDashboardViewModel.loadHealthDashboard()
                 }
                 .onChange(of: selectedTab) { _, newValue in
                     if newValue == .overview {
                         Task {
                             await proactiveViewModel.loadProactiveTracking()
                         }
+                        healthDashboardViewModel.loadHealthDashboard()
                     }
                 }
 
@@ -182,33 +185,43 @@ struct DashboardRedesignView: View {
                 }
             }
 
-            chartCard(title: "Mood Score (14 days)", showLive: true) {
-                Chart(DashboardChartPoint.moodSample) { point in
-                    LineMark(x: .value("Day", point.label), y: .value("Value", point.value))
-                        .foregroundStyle(.blue)
-                    PointMark(x: .value("Day", point.label), y: .value("Value", point.value))
-                        .foregroundStyle(.blue)
+            chartCard(title: "Heart Rate (latest readings)", showLive: healthDashboardViewModel.hasHeartRateData) {
+                if healthDashboardViewModel.heartRatePoints.isEmpty {
+                    dashboardEmptyChartText("No heart-rate data available yet.")
+                } else {
+                    Chart(healthDashboardViewModel.heartRatePoints) { point in
+                        BarMark(x: .value("Time", point.label), y: .value("BPM", point.value))
+                            .foregroundStyle(.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .frame(height: 170)
                 }
-                .frame(height: 170)
             }
 
-            chartCard(title: "Sleep Duration (7 days)", showLive: true) {
-                Chart(DashboardChartPoint.sleepSample) { point in
-                    BarMark(x: .value("Day", point.label), y: .value("Value", point.value))
-                        .foregroundStyle(.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+            chartCard(title: "Sleep Duration (7 days)", showLive: healthDashboardViewModel.hasSleepData) {
+                if healthDashboardViewModel.sleepPoints.isEmpty {
+                    dashboardEmptyChartText("No sleep data available yet.")
+                } else {
+                    Chart(healthDashboardViewModel.sleepPoints) { point in
+                        BarMark(x: .value("Day", point.label), y: .value("Hours", point.value))
+                            .foregroundStyle(.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .frame(height: 170)
                 }
-                .frame(height: 170)
             }
 
-            chartCard(title: "Recovery Level (7 days)", showLive: true) {
-                Chart(DashboardChartPoint.recoverySample) { point in
-                    LineMark(x: .value("Day", point.label), y: .value("Value", point.value))
-                        .foregroundStyle(.green)
-                    PointMark(x: .value("Day", point.label), y: .value("Value", point.value))
-                        .foregroundStyle(.green)
+            chartCard(title: "Recovery Level (HRV)", showLive: healthDashboardViewModel.hasRecoveryData) {
+                if healthDashboardViewModel.recoveryPoints.isEmpty {
+                    dashboardEmptyChartText("No recovery data available yet.")
+                } else {
+                    Chart(healthDashboardViewModel.recoveryPoints) { point in
+                        BarMark(x: .value("Time", point.label), y: .value("HRV", point.value))
+                            .foregroundStyle(.green)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .frame(height: 170)
                 }
-                .frame(height: 170)
             }
         }
     }
@@ -284,29 +297,40 @@ struct DashboardRedesignView: View {
 
     private var snapshotCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("WELLBEING SNAPSHOT")
-                .font(.caption.weight(.semibold))
-                .foregroundColor(.secondary)
+            HStack {
+                Text("WELLBEING SNAPSHOT")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                Text(healthDashboardViewModel.sourceLabel)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.blue.opacity(0.10)))
+            }
 
             HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text("72")
+                Text(healthDashboardViewModel.scoreText)
                     .font(.system(size: 42, weight: .bold))
                 Text("/ 100")
                     .foregroundColor(.secondary)
             }
 
-            Text("Stable and balanced")
+            Text(healthDashboardViewModel.statusTitle)
                 .font(.subheadline)
 
             HStack(spacing: 8) {
-                Text("Balanced")
+                Text(healthDashboardViewModel.levelLabel)
                     .font(.caption.weight(.medium))
-                    .foregroundColor(.purple)
+                    .foregroundColor(healthDashboardViewModel.statusColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Capsule().fill(Color.purple.opacity(0.12)))
+                    .background(Capsule().fill(healthDashboardViewModel.statusColor.opacity(0.12)))
 
-                Text("• Stable Routine")
+                Text("• \(healthDashboardViewModel.shortReason)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -315,8 +339,11 @@ struct DashboardRedesignView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color.blue.opacity(0.10))
+                .fill(healthDashboardViewModel.statusColor.opacity(0.10))
         )
+        .task {
+            healthDashboardViewModel.loadHealthDashboard()
+        }
     }
 
     private func alertCard(_ alert: DashboardAlert) -> some View {
@@ -388,6 +415,15 @@ struct DashboardRedesignView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color(.separator), lineWidth: 1)
         )
+    }
+
+    private func dashboardEmptyChartText(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 170)
+            .multilineTextAlignment(.center)
     }
 
     private func recordCard(_ item: DashboardRecordItem) -> some View {
@@ -966,5 +1002,295 @@ private final class DashboardProactiveViewModel: ObservableObject {
         }
 
         return components.joined(separator: "\n")
+    }
+}
+
+// Supporting types for HealthKit-driven dashboard and AI assessment
+private struct DashboardHealthAssessmentRequest: Encodable {
+    let heartRate: Double?
+    let hrv: Double?
+    let sleepHours: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case heartRate = "heart_rate"
+        case hrv
+        case sleepHours = "sleep_hours"
+    }
+}
+
+private struct DashboardHealthAssessmentResponse: Decodable {
+    let overallStatus: String
+    let score: Int
+    let summary: String
+
+    enum CodingKeys: String, CodingKey {
+        case overallStatus = "overall_status"
+        case score
+        case summary
+    }
+}
+
+private struct DashboardHealthChartPoint: Identifiable {
+    let id = UUID()
+    let label: String
+    let value: Double
+}
+
+@MainActor
+private final class DashboardHealthViewModel: ObservableObject {
+    @Published var score: Int?
+    @Published var status: String = "unknown"
+    @Published var summary: String = "Connect Apple Watch data to generate a wellbeing score."
+    @Published var heartRatePoints: [DashboardHealthChartPoint] = []
+    @Published var sleepPoints: [DashboardHealthChartPoint] = []
+    @Published var recoveryPoints: [DashboardHealthChartPoint] = []
+
+    private var isLoading = false
+
+    var hasHeartRateData: Bool { !heartRatePoints.isEmpty }
+    var hasSleepData: Bool { !sleepPoints.isEmpty }
+    var hasRecoveryData: Bool { !recoveryPoints.isEmpty }
+
+    var scoreText: String {
+        guard let score else { return "--" }
+        return String(score)
+    }
+
+    var levelLabel: String {
+        switch status {
+        case "critical": return "Critical"
+        case "warning": return "Warning"
+        case "normal": return "Normal"
+        default: return "No Data"
+        }
+    }
+
+    var statusTitle: String {
+        switch status {
+        case "critical": return "Needs attention"
+        case "warning": return "Some signals need a check-in"
+        case "normal": return "Stable and balanced"
+        default: return "Waiting for health signals"
+        }
+    }
+
+    var statusColor: Color {
+        switch status {
+        case "critical": return .red
+        case "warning": return .orange
+        case "normal": return .green
+        default: return .blue
+        }
+    }
+
+    var shortReason: String {
+        if summary.isEmpty { return "Generated by AI assessment" }
+        return summary
+    }
+
+    var sourceLabel: String {
+        score == nil ? "Apple Watch" : "AI scored"
+    }
+
+    func loadHealthDashboard() {
+        guard !isLoading else { return }
+        isLoading = true
+
+        HealthKitManager.shared.fetchLatestHeartRate { [weak self] heartReading in
+            guard let self else { return }
+            HealthKitManager.shared.fetchAverageHRVLast24Hours { hrvValue in
+                HealthKitManager.shared.fetchSleepHoursFromLastNight { sleepHours in
+                    DispatchQueue.main.async {
+                        self.buildChartData(
+                            latestHeartRate: heartReading?.bpm,
+                            latestHRV: hrvValue,
+                            latestSleepHours: sleepHours
+                        )
+
+                        Task {
+                            await self.loadAIAssessment(
+                                heartRate: heartReading?.bpm,
+                                hrv: hrvValue,
+                                sleepHours: sleepHours
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func buildChartData(latestHeartRate: Double?, latestHRV: Double?, latestSleepHours: Double?) {
+        loadHeartRateTrend()
+
+        HealthKitManager.shared.fetchSleepTrendReadings(range: .week) { [weak self] readings in
+            DispatchQueue.main.async {
+                self?.sleepPoints = readings.map {
+                    DashboardHealthChartPoint(label: $0.label, value: $0.hours)
+                }
+            }
+        }
+
+        loadHRVTrend()
+    }
+    
+    private func loadHeartRateTrend() {
+        let calendar = Calendar.current
+        let endDate = Date()
+        let startDate = calendar.date(byAdding: .hour, value: -12, to: endDate) ?? endDate.addingTimeInterval(-12 * 60 * 60)
+
+        HealthKitManager.shared.fetchHeartRateReadings(from: startDate, to: endDate) { [weak self] readings in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.heartRatePoints = self.compactHeartRateReadings(readings, targetCount: 6)
+            }
+        }
+    }
+
+    private func compactHeartRateReadings(
+        _ readings: [HealthKitManager.HeartRateTrendReading],
+        targetCount: Int
+    ) -> [DashboardHealthChartPoint] {
+        guard !readings.isEmpty else { return [] }
+
+        guard readings.count > targetCount else {
+            return readings.map {
+                DashboardHealthChartPoint(label: chartTimeLabel(for: $0.endDate), value: $0.bpm)
+            }
+        }
+
+        let chunkSize = Double(readings.count) / Double(targetCount)
+
+        return (0..<targetCount).compactMap { index in
+            let start = Int(Double(index) * chunkSize)
+            let end = min(Int(Double(index + 1) * chunkSize), readings.count)
+            let chunk = Array(readings[start..<max(start + 1, end)])
+
+            guard let representative = chunk.last else { return nil }
+
+            let average = chunk.map(\.bpm).reduce(0, +) / Double(chunk.count)
+
+            return DashboardHealthChartPoint(
+                label: chartTimeLabel(for: representative.endDate),
+                value: average
+            )
+        }
+    }
+
+    private func chartTimeLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        formatter.dateFormat = "ha"
+        return formatter.string(from: date)
+    }
+
+    private func makeRecentPoints(from currentValue: Double, labels: [String], step: Double) -> [DashboardHealthChartPoint] {
+        labels.enumerated().map { index, label in
+            let distance = Double(labels.count - index - 1)
+            let adjusted = max(0, currentValue - distance * step + Double(index % 2) * step * 0.45)
+            return DashboardHealthChartPoint(label: label, value: adjusted)
+        }
+    }
+
+    private func loadAIAssessment(heartRate: Double?, hrv: Double?, sleepHours: Double?) async {
+        defer { isLoading = false }
+
+        do {
+            let response: DashboardHealthAssessmentResponse = try await APIClient.shared.request(
+                path: "/api/health/assess/",
+                method: "POST",
+                body: DashboardHealthAssessmentRequest(
+                    heartRate: heartRate,
+                    hrv: hrv,
+                    sleepHours: sleepHours
+                ),
+                requiresAuth: false
+            )
+
+            score = response.score
+            status = response.overallStatus
+            summary = response.summary
+        } catch {
+            print("❌ Failed to load dashboard AI health assessment:", error.localizedDescription)
+            score = fallbackScore(heartRate: heartRate, hrv: hrv, sleepHours: sleepHours)
+            status = fallbackStatus(score: score)
+            summary = "Generated from available Apple Watch signals."
+        }
+    }
+
+    private func fallbackScore(heartRate: Double?, hrv: Double?, sleepHours: Double?) -> Int? {
+        var scores: [Int] = []
+
+        if let sleepHours {
+            if sleepHours >= 7 { scores.append(90) }
+            else if sleepHours >= 6 { scores.append(75) }
+            else if sleepHours >= 4 { scores.append(60) }
+            else { scores.append(35) }
+        }
+
+        if let heartRate {
+            if heartRate >= 50 && heartRate <= 100 { scores.append(90) }
+            else if heartRate <= 120 { scores.append(65) }
+            else { scores.append(35) }
+        }
+
+        if let hrv {
+            if hrv >= 35 { scores.append(90) }
+            else if hrv >= 20 { scores.append(65) }
+            else { scores.append(35) }
+        }
+
+        guard !scores.isEmpty else { return nil }
+        return scores.reduce(0, +) / scores.count
+    }
+
+    private func fallbackStatus(score: Int?) -> String {
+        guard let score else { return "unknown" }
+        if score < 50 { return "critical" }
+        if score < 75 { return "warning" }
+        return "normal"
+    }
+
+    private func loadHRVTrend() {
+        let calendar = Calendar.current
+        let endDate = Date()
+        let startDate = calendar.date(byAdding: .hour, value: -24, to: endDate) ?? endDate.addingTimeInterval(-24 * 60 * 60)
+
+        HealthKitManager.shared.fetchHRVReadings(from: startDate, to: endDate) { [weak self] readings in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.recoveryPoints = self.compactHRVReadings(readings, targetCount: 6)
+            }
+        }
+    }
+
+    private func compactHRVReadings(
+        _ readings: [HealthKitManager.HRVReading],
+        targetCount: Int
+    ) -> [DashboardHealthChartPoint] {
+        guard !readings.isEmpty else { return [] }
+
+        guard readings.count > targetCount else {
+            return readings.map {
+                DashboardHealthChartPoint(label: chartTimeLabel(for: $0.endDate), value: $0.sdnnMs)
+            }
+        }
+
+        let chunkSize = Double(readings.count) / Double(targetCount)
+
+        return (0..<targetCount).compactMap { index in
+            let start = Int(Double(index) * chunkSize)
+            let end = min(Int(Double(index + 1) * chunkSize), readings.count)
+            let chunk = Array(readings[start..<max(start + 1, end)])
+
+            guard let representative = chunk.last else { return nil }
+
+            let average = chunk.map(\.sdnnMs).reduce(0, +) / Double(chunk.count)
+
+            return DashboardHealthChartPoint(
+                label: chartTimeLabel(for: representative.endDate),
+                value: average
+            )
+        }
     }
 }

@@ -85,6 +85,12 @@ final class HealthKitManager {
         let endDate: Date
     }
 
+    struct HeartRateTrendReading {
+        let bpm: Double
+        let startDate: Date
+        let endDate: Date
+    }
+
     struct HRVReading {
         let sdnnMs: Double
         let startDate: Date
@@ -102,6 +108,8 @@ final class HealthKitManager {
         let heartRate: HeartRateReading?
         let hrvSDNNMs: Double?
         let sleepHours: Double?
+        let heartRateTrend: [HeartRateTrendReading]
+        let hrvTrend: [HRVReading]
         let capturedAt: Date
     }
 
@@ -127,6 +135,10 @@ final class HealthKitManager {
         var latestHeartRate: HeartRateReading?
         var latestHRV: Double?
         var latestSleepHours: Double?
+        
+        let trendStartDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date().addingTimeInterval(-7 * 24 * 60 * 60)
+        var heartRateTrend: [HeartRateTrendReading] = []
+        var hrvTrend: [HRVReading] = []
 
         group.enter()
         fetchLatestHeartRate { reading in
@@ -145,9 +157,21 @@ final class HealthKitManager {
             latestSleepHours = hours
             group.leave()
         }
+        
+        group.enter()
+        fetchHeartRateReadings(from: trendStartDate) { readings in
+            heartRateTrend = readings
+            group.leave()
+        }
+
+        group.enter()
+        fetchHRVReadings(from: trendStartDate) { readings in
+            hrvTrend = readings
+            group.leave()
+        }
 
         group.notify(queue: .global()) {
-            let hasAny = latestHeartRate != nil || latestHRV != nil || latestSleepHours != nil
+            let hasAny = latestHeartRate != nil || latestHRV != nil || latestSleepHours != nil || !heartRateTrend.isEmpty || !hrvTrend.isEmpty
             guard hasAny else {
                 completion(nil)
                 return
@@ -158,6 +182,8 @@ final class HealthKitManager {
                     heartRate: latestHeartRate,
                     hrvSDNNMs: latestHRV,
                     sleepHours: latestSleepHours,
+                    heartRateTrend: heartRateTrend,
+                    hrvTrend: hrvTrend,
                     capturedAt: Date()
                 )
             )
@@ -220,6 +246,81 @@ final class HealthKitManager {
     }
 
 
+    // Heart rate trend: fetch Apple Watch / Health app heart-rate samples for a custom date range, in bpm.
+    func fetchHeartRateReadings(
+        from startDate: Date,
+        to endDate: Date = Date(),
+        completion: @escaping ([HeartRateTrendReading]) -> Void
+    ) {
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate) else {
+            completion([])
+            return
+        }
+
+        if !hasCompletedInitialAuthorizationFlow {
+            requestAuthorization { [weak self] success in
+                guard success, let self else {
+                    completion([])
+                    return
+                }
+                self.fetchHeartRateReadings(from: startDate, to: endDate, completion: completion)
+            }
+            return
+        }
+
+        let predicate = HKQuery.predicateForSamples(
+            withStart: startDate,
+            end: endDate,
+            options: .strictStartDate
+        )
+
+        let sortDescriptor = NSSortDescriptor(
+            key: HKSampleSortIdentifierStartDate,
+            ascending: true
+        )
+
+        let query = HKSampleQuery(
+            sampleType: heartRateType,
+            predicate: predicate,
+            limit: HKObjectQueryNoLimit,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            if let error {
+                print("❌ Failed to read heart-rate trend samples: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            let quantitySamples = samples as? [HKQuantitySample] ?? []
+            guard !quantitySamples.isEmpty else {
+                print("ℹ️ No heart-rate trend sample available in selected range.")
+                completion([])
+                return
+            }
+
+            let watchSamples = quantitySamples.filter(\.isAppleWatchSource)
+
+            // Prefer Apple Watch samples. If source metadata is unavailable, fall back to all heart-rate samples
+            // so the chart can still display data already synced into Apple Health.
+            let displaySamples = watchSamples.isEmpty ? quantitySamples : watchSamples
+
+            let unit = HKUnit.count().unitDivided(by: .minute())
+            let readings = displaySamples.map { sample in
+                HeartRateTrendReading(
+                    bpm: sample.quantity.doubleValue(for: unit),
+                    startDate: sample.startDate,
+                    endDate: sample.endDate
+                )
+            }
+
+            print("❤️ Heart-rate trend samples loaded: \(readings.count) from \(startDate) to \(endDate)")
+            completion(readings)
+        }
+
+        healthStore.execute(query)
+    }
+
+
     // HRV (SDNN): average Apple Watch samples from the last 24 hours, in ms.
     func fetchAverageHRVLast24Hours(completion: @escaping (Double?) -> Void) {
         guard let hrvType = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
@@ -261,13 +362,9 @@ final class HealthKitManager {
             }
 
             let watchSamples = quantitySamples.filter(\.isAppleWatchSource)
-            guard !watchSamples.isEmpty else {
-                print("ℹ️ No Apple Watch HRV sample available in last 24h.")
-                completion(nil)
-                return
-            }
+            let displaySamples = watchSamples.isEmpty ? quantitySamples : watchSamples
 
-            let values = watchSamples.map {
+            let values = displaySamples.map {
                 $0.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
             }
             let avg = values.reduce(0, +) / Double(values.count)

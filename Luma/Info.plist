@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Luma needs microphone access so you can use voice input.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Luma needs speech recognition to convert your voice into text.</string>
+	<key>CFBundleIdentifier</key>
+	<string></string>
 	<key>API_BASE_URL</key>
 	<string>https://luma-backend-9mz4.onrender.com</string>
 	<key>SUPABASE_ANON_KEY</key>
