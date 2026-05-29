@@ -39,7 +39,7 @@ Luma is an AI-powered mental health support companion built as an iOS MVP. It in
 - Backend already deployed on Render — no local backend setup needed for demo.
 
 ### Steps
-1. Clone the repository: `[INSERT GITLAB REPO LINK HERE]`
+1. Clone the repository: `https://github.com/QiyuanHananu/Luma-Frontend`
 2. Open `Luma.xcodeproj` in Xcode
 3. Select your target device (physical iPhone recommended)
 4.
@@ -61,34 +61,28 @@ Luma is an AI-powered mental health support companion built as an iOS MVP. It in
 #### Core Prototype Workflow
 
 - [x] **SwiftUI frontend with dashboard views**
-  - Code: `[INSERT LINK TO /Luma/Views/ IN GITLAB]`
+  - Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/DashboardRedesign.swift`
   - Demo: Run app → Tab 1 (AI Companion) → ☰ menu → Medical Dashboard
-  - Screenshot: `[INSERT SCREENSHOT OF DASHBOARD HERE]`
 
 - [x] **Django + Supabase backend integration**
-  - Code: `[INSERT LINK TO BACKEND FOLDER IN GITLAB]`
+  - Code: `https://github.com/jo355/Luma-backend`
   - Live endpoint: `https://luma-backend-9mz4.onrender.com/test`
-  - Screenshot/Evidence: `[INSERT SCREENSHOT OF SUPABASE TABLE OR API RESPONSE HERE]`
 
 - [x] **AI Companion interface**
-  - Code: `[INSERT LINK TO CompanionView.swift IN GITLAB]`
+  - Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/CompanionView.swift`
   - Demo: Run app → Tab 1 → Tap Luma → Send a message → Receive AI response
-  - Screenshot: `[INSERT SCREENSHOT OF AI CHAT RESPONSE HERE]`
 
 - [x] **Proactive insights generated from biometric data**
-  - Code: `[INSERT LINK TO AI INSIGHTS LOGIC IN GITLAB]`
+  - Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/DashboardRedesign.swift`
   - Demo: ☰ menu → Medical Dashboard → Insights panel
-  - Screenshot: `[INSERT SCREENSHOT OF PROACTIVE INSIGHTS PANEL HERE]`
 
 - [x] **Digital Twin biometric data workflow**
-  - Code: `[INSERT LINK TO DigitalTwinPage.swift AND HumanModelView.swift IN GITLAB]`
+  - Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/DigitalTwinPage.swift`
   - Demo: Run app → 3D model renders → Tap head (Brain Health) / Tap chest (Heart Health)
-  - Screenshot: `[INSERT SCREENSHOT OF DIGITAL TWIN 3D MODEL HERE]`
 
 - [x] **Apple Watch biometric sync to backend**
-  - Code: `[INSERT LINK TO WATCH SYNC / BIOMETRIC PIPELINE CODE IN GITLAB]`
+  - Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/SleepHealthView.swift`
   - Demo: Sync Watch → data appears in Supabase → dashboard updates
-  - Screenshot/Evidence: `[INSERT SCREENSHOT OF SUPABASE BIOMETRIC TABLE WITH DATA HERE]`
 
 - [x] **End-to-end integration (Watch → Backend → AI → Dashboard)**
   - Evidence: See Testing Report (Section 5 of this document)
@@ -99,40 +93,40 @@ Luma is an AI-powered mental health support companion built as an iOS MVP. It in
 ### 3.2 Handover Documents (Delivery Plan §2.4)
 
 - [x] **Technical Architecture Document**
-  - Link: `[INSERT LINK TO TECHNICAL ARCHITECTURE DOC]`
+  - Link: `https://drive.google.com/file/d/1DTLSt6KkS4rjxkP-ULD8e7CsT7dPWYmo/view?usp=drive_link`
   - Contents: System architecture diagrams, SwiftUI frontend structure, Django backend services, Supabase integration, AI workflow, biometric data pipeline
 
 - [x] **Deployment & Setup Guide**
-  - Link: `[INSERT LINK TO DEPLOYMENT AND SETUP GUIDE]`
+  - Link: `https://drive.google.com/file/d/1iTRRfVpNIu_n6t2AOnb4bTEu7sQAENFB/view?usp=drive_link`
   - Contents: Environment setup, Xcode build steps, backend deployment on Render, Supabase configuration, API key setup, Apple HealthKit permissions
 
 - [x] **API Documentation**
-  - Link: `[INSERT LINK TO API DOCUMENTATION]`
+  - Link: `https://drive.google.com/file/d/1E8uFuVR6nnu0IhW_wm1bwOLtQg1SYljk/view?usp=drive_link`
   - Contents: All backend endpoints, request/response formats, authentication flows, biometric data endpoints, chatbot API, Supabase communication
 
 - [x] **Database Schema Documentation**
-  - Link: `[INSERT LINK TO DATABASE SCHEMA DOC OR SUPABASE SCREENSHOT]`
+  - Link: `https://drive.google.com/file/d/1uZHiwp7N1_EJYUBDjMtvktPWNboElXWv/view?usp=drive_link`
   - Contents: ER diagrams, table definitions, attribute descriptions, biometric and sleep data structures
   - Screenshot: `[INSERT SUPABASE SCHEMA SCREENSHOT HERE]`
 
 - [x] **AI System Documentation**
-  - Link: `[INSERT LINK TO AI SYSTEM DOC]`
+  - Link: `https://drive.google.com/file/d/14mh_NU5LZMmdNgRWWDxmX7lQfJca8NGe/view?usp=drive_link`
   - Contents: Claude API integration, prompt workflow, chatbot-to-database logic, contextual insight generation, current AI limitations
 
 - [x] **User Guide**
-  - Link: `[INSERT LINK TO USER GUIDE]`
+  - Link: `https://drive.google.com/file/d/1WM5EM5bte5YeCXUANFaB67Otu3xizgkE/view?usp=drive_link`
   - Contents: Onboarding, Apple Watch connectivity, dashboard navigation, AI Companion interaction, report viewing
 
 - [x] **Testing Report**
-  - Link: `[INSERT LINK TO Luma_Testing_Report.md IN GITLAB OR HANDOVER FOLDER]`
+  - Link: `https://drive.google.com/file/d/1EU7leIiOnKEy2EZRp0kUoS5-76MXrgIK/view?usp=drive_link`
   - Contents: 31 test cases across frontend, backend, AI, Watch integration, dashboard, privacy — all passed. Known issues documented.
 
 - [x] **Known Limitations & Future Recommendations**
-  - Link: `[INSERT LINK TO KNOWN LIMITATIONS DOC]`
+  - Link: `https://drive.google.com/file/d/1LeM8XVTZviHVP4uh7oTah9niYrttz-9S/view?usp=drive_link`
   - Contents: Current prototype limitations, unresolved low-priority issues, future development roadmap
 
 - [x] **Delivery Plan**
-  - Link: `[INSERT LINK TO DELIVERY PLAN PDF IN GITLAB OR HANDOVER FOLDER]`
+  - Link: `https://drive.google.com/file/d/1HS9Oy4VGT7FU6i8nqySIRc-F3rX7gE4Y/view?usp=drive_link`
 
 ---
 
@@ -141,20 +135,17 @@ Luma is an AI-powered mental health support companion built as an iOS MVP. It in
 #### Dashboard & Analytics System (SwiftUI + Supabase + Django)
 - Status: **Completed**
 - Demo: ☰ menu → Medical Dashboard → health metrics, trends, insights
-- Code: `[INSERT LINK TO SimpleMedicalDashboardView.swift]`
-- Screenshot: `[INSERT DASHBOARD SCREENSHOT HERE]`
+- Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/DashboardRedesign.swift`
 
 #### AI Companion System (Claude API + Database Integration)
 - Status: **Completed**
 - Demo: Tab 1 → chat with Luma → contextual response using biometric data
-- Code: `[INSERT LINK TO AI COMPANION / CLAUDE API INTEGRATION CODE]`
-- Screenshot: `[INSERT AI COMPANION CHAT SCREENSHOT HERE]`
+- Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/CompanionView.swift`
 
 #### Digital Twin (Apple Watch + Biometric Pipeline)
 - Status: **Completed**
 - Demo: Watch sync → data stored in Supabase → displayed in dashboard and Digital Twin view
-- Code: `[INSERT LINK TO DIGITAL TWIN AND WATCH SYNC CODE]`
-- Screenshot: `[INSERT DIGITAL TWIN AND WATCH SYNC SCREENSHOT HERE]`
+- Code: `https://github.com/QiyuanHananu/Luma-Frontend/blob/main/Luma/Views/DigitalTwinPage.swift`
 
 ---
 
@@ -258,6 +249,29 @@ Predictive wellbeing analytics (stress trend analysis, sleep recovery prediction
 ## 8. Acknowledgements
 
 We thank Jerome Loo (stakeholder) for his guidance and vision throughout the project, and the ANU TechLauncher course team and our tutor Yumin for their support and feedback across the semester.
+
+## 9. Appendix
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/images/login-screen.png" width="220"><br>
+      <strong>Figure 1. Login Screen</strong>
+    </td>
+    <td align="center">
+      <img src="docs/images/companion-chat.png" width="220"><br>
+      <strong>Figure 2. AI Companion Chat</strong>
+    </td>
+    <td align="center">
+      <img src="docs/images/dashboard.png" width="220"><br>
+      <strong>Figure 3. Health Dashboard</strong>
+    </td>
+        <td align="center">
+      <img src="docs/images/digital-twin.png" width="220"><br>
+      <strong>Figure 4. Digital Twin</strong>
+    </td>
+  </tr>
+</table>
 
 ---
 
